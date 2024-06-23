@@ -20,7 +20,7 @@ import (
 type SignupInput struct {
 	Username string `form:"username" binding:"required,alphanum,min=4,max=32"`
 	Password string `form:"password" binding:"required"`
-	Email    string `form:"email" binding:"omitempty,email"`
+	Email    string `form:"email" binding:"required,email"`
 }
 
 func (a *API) CheckIsSignupEnabled(c *gin.Context) {

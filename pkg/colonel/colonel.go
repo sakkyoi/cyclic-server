@@ -16,6 +16,7 @@ type Config struct {
 	SMTP     *SMTPConfig     `koanf:"smtp"`
 	Database *DatabaseConfig `koanf:"database"`
 	JWT      *JWTConfig      `koanf:"jwt"`
+	Logger   *LoggerConfig   `koanf:"logger"`
 }
 
 type ServerConfig struct {
@@ -50,6 +51,15 @@ type JWTConfig struct {
 	PrivateKey string `koanf:"privateKey"`
 	PublicKey  string `koanf:"publicKey"`
 	Expiration int    `koanf:"expiration"`
+}
+
+type LoggerConfig struct {
+	Level      string `koanf:"level"`
+	File       string `koanf:"file"`
+	MaxSize    int    `koanf:"maxSize"`
+	MaxBackups int    `koanf:"maxBackups"`
+	MaxAge     int    `koanf:"maxAge"`
+	Compress   bool   `koanf:"compress"`
 }
 
 func Init() {
