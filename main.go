@@ -7,7 +7,6 @@ import (
 	"cyclic/pkg/scribe"
 	"cyclic/pkg/secretary"
 	"cyclic/router"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"os"
 	"os/signal"
@@ -17,13 +16,14 @@ import (
 
 func init() {
 	colonel.Init()   // Initialize the configuration
+	scribe.Init()    // Initialize the logger, logger must be initialized before anything else instead of the configuration
 	secretary.Init() // Initialize the database
-	scribe.Init()    // Initialize the logger
 
 	gin.SetMode(colonel.Writ.Server.Mode) // Set gin mode
 }
 
 func main() {
+	scribe.Scribe.Info("server start")
 	ctx, cancel := context.WithCancel(context.Background()) // this context will be used to stop the server
 	wg := &sync.WaitGroup{}                                 // wait group to wait for the server to stop gracefully
 
@@ -40,7 +40,5 @@ func main() {
 	wg.Add(2) // add 2 because we started 2 goroutines above
 	wg.Wait()
 
-	fmt.Println("cyclic stopped") // TODO: Implement logging
 	scribe.Scribe.Info("server stop gracefully")
-	scribe.Scribe.Fatal("server stop gracefully")
 }

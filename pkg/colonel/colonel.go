@@ -5,6 +5,7 @@ import (
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
+	"log"
 	"strings"
 )
 
@@ -68,7 +69,7 @@ func Init() {
 	// Load from yaml file
 	f := file.Provider("config.yml")
 	if err := k.Load(f, yaml.Parser()); err != nil {
-		panic(err)
+		log.Fatal(err) // to avoid import cycle, we use log.Fatal here instead of scribe.Scribe.Fatal
 	}
 
 	// Load from environment variables and merge into the loaded config
@@ -76,11 +77,11 @@ func Init() {
 		return strings.Replace(strings.ToLower(
 			strings.TrimPrefix(s, "CYCLIC_")), "_", ".", -1)
 	}), nil); err != nil {
-		panic(err)
+		log.Fatal(err) // to avoid import cycle, we use log.Fatal here instead of scribe.Scribe.Fatal
 	}
 
 	// Unmarshal the whole config into the Writ variable
 	if err := k.Unmarshal("", &Writ); err != nil {
-		panic(err)
+		log.Fatal(err) // to avoid import cycle, we use log.Fatal here instead of scribe.Scribe.Fatal
 	}
 }
