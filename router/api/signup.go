@@ -4,17 +4,16 @@ import (
 	"cyclic/ent"
 	"cyclic/ent/user"
 	"cyclic/pkg/colonel"
+	"cyclic/pkg/dispatcher"
 	"cyclic/pkg/figleaf"
 	"cyclic/pkg/magistrate"
+	"cyclic/pkg/scribe"
 	"cyclic/pkg/secretary"
 	"cyclic/router/model"
-	"fmt"
-	"github.com/emersion/go-sasl"
-	"github.com/emersion/go-smtp"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"net/http"
-	"strings"
 )
 
 type SignupInput struct {
@@ -70,26 +69,12 @@ func (a *API) Signup(c *gin.Context) {
 		return
 	}
 
-	// generate a token for email verification
-	m := magistrate.New()
-
-	token, err := m.Issue([]string{"signup"}, result.ID.String())
-	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to issue token", Detail: err.Error()})
-		return
-	}
-
-	// send email TODO: move this to a background job
-	auth := sasl.NewPlainClient("", colonel.Writ.SMTP.User, colonel.Writ.SMTP.Password)
-
-	to := []string{input.Email}
-	msg := strings.NewReader("Subject: Verify your email\n\nPlease verify your email address.\n\n" + token)
-	err = smtp.SendMail(fmt.Sprintf("%s:%d", colonel.Writ.SMTP.Host, colonel.Writ.SMTP.Port), auth, colonel.Writ.SMTP.User, to, msg)
-
-	if err != nil {
-		// TODO: implement logging when failed to send email
-		c.AbortWithStatusJSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to send email", Detail: err.Error()})
-		return
+	// enqueue a message to send an email
+	if err := dispatcher.Enqueue(&dispatcher.Message{
+		Type:   dispatcher.Signup,
+		Target: result.ID.String(),
+	}); err != nil {
+		scribe.Scribe.Error("failed to enqueue message", zap.Error(err)) // just log the error cause the user is already created
 	}
 
 	c.JSON(http.StatusOK, model.Response{Data: "ok"})

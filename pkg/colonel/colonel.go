@@ -16,6 +16,7 @@ type Config struct {
 	Signup   *SignupConfig   `koanf:"signup"`
 	SMTP     *SMTPConfig     `koanf:"smtp"`
 	Database *DatabaseConfig `koanf:"database"`
+	Redis    *RedisConfig    `koanf:"redis"`
 	JWT      *JWTConfig      `koanf:"jwt"`
 	Logger   *LoggerConfig   `koanf:"logger"`
 }
@@ -46,6 +47,13 @@ type DatabaseConfig struct {
 	Password string `koanf:"password"`
 	Name     string `koanf:"name"`
 	Driver   string `koanf:"driver"`
+}
+
+type RedisConfig struct {
+	Host     string `koanf:"host"`
+	Port     int    `koanf:"port"`
+	Password string `koanf:"password"`
+	DB       int    `koanf:"db"`
 }
 
 type JWTConfig struct {

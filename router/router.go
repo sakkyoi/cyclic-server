@@ -37,7 +37,7 @@ func Route(ctx context.Context, wg *sync.WaitGroup) {
 
 	<-ctx.Done() // wait for the context to be done
 
-	fmt.Println("router stopped")
+	scribe.Scribe.Info("router stopped")
 }
 
 func build() *gin.Engine {
