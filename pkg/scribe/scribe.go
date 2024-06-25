@@ -22,13 +22,15 @@ var Level = map[string]zapcore.Level{
 }
 
 // Init initializes the logger Scribe
-func Init() {
+func Init() error {
 	Scribe = build(Level[colonel.Writ.Logger.Level],
 		colonel.Writ.Logger.File,
 		colonel.Writ.Logger.MaxSize,
 		colonel.Writ.Logger.MaxBackups,
 		colonel.Writ.Logger.MaxAge,
 		colonel.Writ.Logger.Compress)
+
+	return nil
 }
 
 // New creates a new zap logger

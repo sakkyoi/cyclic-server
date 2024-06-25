@@ -3,11 +3,9 @@ package magistrate
 import (
 	"crypto/rsa"
 	"cyclic/pkg/colonel"
-	"cyclic/pkg/scribe"
 	"errors"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/golang-jwt/jwt/v5/request"
-	"go.uber.org/zap"
 	"net/http"
 	"slices"
 	"time"
@@ -29,19 +27,21 @@ type Info struct {
 
 func New() *Magistrate {
 	m := &Magistrate{}
+
 	m.signKey, m.VerifyKey = m.init()
+
 	return m
 }
 
 func (m *Magistrate) init() (*rsa.PrivateKey, *rsa.PublicKey) {
 	signKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(colonel.Writ.JWT.PrivateKey))
 	if err != nil {
-		scribe.Scribe.Fatal("failed to parse private key", zap.Error(err))
+		panic(err)
 	}
 
 	verifyKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(colonel.Writ.JWT.PublicKey))
 	if err != nil {
-		scribe.Scribe.Fatal("failed to parse public key", zap.Error(err))
+		panic(err)
 	}
 
 	return signKey, verifyKey

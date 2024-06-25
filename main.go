@@ -6,10 +6,14 @@ import (
 	"cyclic/mailer"
 	"cyclic/pkg/colonel"
 	"cyclic/pkg/dispatcher"
+	"cyclic/pkg/magistrate"
 	"cyclic/pkg/scribe"
 	"cyclic/pkg/secretary"
 	"cyclic/router"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+	"log"
 	"os"
 	"os/signal"
 	"sync"
@@ -17,12 +21,30 @@ import (
 )
 
 func init() {
-	colonel.Init()    // Initialize the configuration
-	scribe.Init()     // Initialize the logger, logger must be initialized before anything else instead of the configuration
-	secretary.Init()  // Initialize the database
-	dispatcher.Init() // Initialize the message queue
+	// Initialize the configuration
+	if err := colonel.Init(); err != nil {
+		log.Fatal(fmt.Sprintf("failed to initialize configuration: %v", err)) // cause the logger(scribe) is not initialized yet, we use log.Fatal instead
+	}
+
+	// Initialize the logger, logger must be initialized before anything else except the configuration
+	if err := scribe.Init(); err != nil {
+		log.Fatal(fmt.Sprintf("failed to initialize logger: %v", err)) // cause the logger(scribe) initialization failed, we use log.Fatal instead
+	}
+
+	// Initialize the database
+	if err := secretary.Init(); err != nil {
+		scribe.Scribe.Fatal("failed to initialize database", zap.Error(err))
+	}
+
+	// Initialize the message queue
+	if err := dispatcher.Init(); err != nil {
+		scribe.Scribe.Fatal("failed to initialize message queue", zap.Error(err))
+	}
 
 	gin.SetMode(colonel.Writ.Server.Mode) // Set gin mode
+
+	// test the magistrate(to avoid invalid keys)
+	_ = magistrate.New()
 }
 
 func main() {

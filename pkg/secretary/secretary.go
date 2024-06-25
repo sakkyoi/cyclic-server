@@ -4,15 +4,13 @@ import (
 	"context"
 	"cyclic/ent"
 	"cyclic/pkg/colonel"
-	"cyclic/pkg/scribe"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"go.uber.org/zap"
 )
 
 var Minute *ent.Client
 
-func Init() {
+func Init() error {
 	driver := colonel.Writ.Database.Driver
 
 	var dsn string
@@ -28,20 +26,22 @@ func Init() {
 			colonel.Writ.Database.Port,
 			colonel.Writ.Database.Name)
 	default:
-		scribe.Scribe.Fatal("unsupported database driver", zap.String("driver", driver))
+		return fmt.Errorf("unsupported database driver: %s", driver)
 	}
 
 	client, err := ent.Open(driver, dsn)
 	if err != nil {
-		scribe.Scribe.Fatal("failed to open database", zap.Error(err))
+		return err
 	}
 
 	Minute = client
 
 	// do migration
 	if err := Migrate(); err != nil {
-		scribe.Scribe.Fatal("failed to migrate database", zap.Error(err))
+		return err
 	}
+
+	return nil
 }
 
 func Migrate() error {

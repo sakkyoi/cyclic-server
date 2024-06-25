@@ -3,11 +3,9 @@ package dispatcher
 import (
 	"context"
 	"cyclic/pkg/colonel"
-	"cyclic/pkg/scribe"
 	"encoding/json"
 	"fmt"
 	"github.com/redis/go-redis/v9"
-	"go.uber.org/zap"
 )
 
 var Dispatcher *redis.Client
@@ -24,7 +22,7 @@ type Message struct {
 	Target string `json:"target"`
 }
 
-func Init() {
+func Init() error {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", colonel.Writ.Redis.Host, colonel.Writ.Redis.Port),
 		Password: colonel.Writ.Redis.Password,
@@ -32,10 +30,12 @@ func Init() {
 	})
 
 	if _, err := rdb.Ping(ctx).Result(); err != nil {
-		scribe.Scribe.Fatal("failed to connect to redis", zap.Error(err))
+		return err
 	}
 
 	Dispatcher = rdb
+
+	return nil
 }
 
 func Enqueue(message *Message) error {

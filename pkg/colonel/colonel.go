@@ -5,7 +5,6 @@ import (
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
-	"log"
 	"strings"
 )
 
@@ -71,13 +70,13 @@ type LoggerConfig struct {
 	Compress   bool   `koanf:"compress"`
 }
 
-func Init() {
+func Init() error {
 	k := koanf.New(".")
 
 	// Load from yaml file
 	f := file.Provider("config.yml")
 	if err := k.Load(f, yaml.Parser()); err != nil {
-		log.Fatal(err) // to avoid import cycle, we use log.Fatal here instead of scribe.Scribe.Fatal
+		return err
 	}
 
 	// Load from environment variables and merge into the loaded config
@@ -85,11 +84,13 @@ func Init() {
 		return strings.Replace(strings.ToLower(
 			strings.TrimPrefix(s, "CYCLIC_")), "_", ".", -1)
 	}), nil); err != nil {
-		log.Fatal(err) // to avoid import cycle, we use log.Fatal here instead of scribe.Scribe.Fatal
+		return err
 	}
 
 	// Unmarshal the whole config into the Writ variable
 	if err := k.Unmarshal("", &Writ); err != nil {
-		log.Fatal(err) // to avoid import cycle, we use log.Fatal here instead of scribe.Scribe.Fatal
+		return err
 	}
+
+	return nil
 }
