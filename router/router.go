@@ -55,13 +55,17 @@ func build() *gin.Engine {
 
 	apiGroup := r.Group("/api")
 	{
-		apiGroup.GET("/ding", a.Ding) // health check
+		// health check
+		apiGroup.GET("/ding", a.Ding)
 
-		apiGroup.GET("/signup", a.CheckIsSignupEnabled)    // check if signup is enabled
-		apiGroup.POST("/signup", a.Signup)                 // signup
-		apiGroup.PUT("/signup", jwt.JWT(), a.VerifySignup) // verify signup with token if verification is enabled
+		// signup
+		apiGroup.GET("/signup", a.Signup.Check)             // check if signup is enabled
+		apiGroup.POST("/signup", a.Signup.Signup)           // signup
+		apiGroup.PATCH("/signup", a.Signup.Resend)          // resend verification email
+		apiGroup.PUT("/signup", jwt.JWT(), a.Signup.Verify) // verify with token if verification is enabled
 
-		apiGroup.POST("/login", a.Login)
+		// user
+		apiGroup.POST("/auth", a.User.Auth)
 
 		apiGroup.GET("/user", jwt.JWT(), a.User.Get)
 	}

@@ -1,11 +1,13 @@
 package api
 
 import (
+	"cyclic/router/api/signup"
 	"cyclic/router/api/user"
 )
 
 type API struct {
-	User *user.User
+	Signup *signup.Signup
+	User   *user.User
 }
 
 func New() *API {

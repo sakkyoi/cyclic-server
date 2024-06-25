@@ -1,4 +1,4 @@
-package api
+package user
 
 import (
 	"cyclic/ent"
@@ -11,13 +11,13 @@ import (
 	"net/http"
 )
 
-type LoginInput struct {
-	Username string `form:"username" binding:"required,alphanum,min=4,max=32"`
+type AuthInput struct {
+	Username string `form:"username" binding:"required,alphanum,min=4,max=15"`
 	Password string `form:"password" binding:"required"`
 }
 
-func (a *API) Login(c *gin.Context) {
-	var input LoginInput
+func (*User) Auth(c *gin.Context) {
+	var input AuthInput
 	if err := c.ShouldBind(&input); err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
 		return
@@ -25,6 +25,7 @@ func (a *API) Login(c *gin.Context) {
 
 	figLeaf := figleaf.FigLeaf{}
 
+	// query user
 	result, err := secretary.Minute.User.Query().
 		Where(user.Username(input.Username)).
 		Only(c)
@@ -36,13 +37,12 @@ func (a *API) Login(c *gin.Context) {
 		return
 	}
 
+	// verify is password correct
 	ok, err := figLeaf.Peep(input.Password, result.Password)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to encode password", Detail: err.Error()})
 		return
-	}
-
-	if !ok {
+	} else if !ok {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Type: model.ErrorUnauthorized, Error: "unauthorized"})
 		return
 	}
@@ -53,10 +53,9 @@ func (a *API) Login(c *gin.Context) {
 		return
 	}
 
+	// issue token
 	m := magistrate.New()
-
 	token, err := m.Issue([]string{"general"}, result.ID.String())
-
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to issue token", Detail: err.Error()})
 		return

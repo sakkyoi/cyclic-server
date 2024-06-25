@@ -18,6 +18,8 @@ func (User) Fields() []ent.Field {
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New),
 		field.String("username").
+			MinLen(4).
+			MaxLen(15).
 			Optional().
 			Unique(),
 		field.Bytes("password").

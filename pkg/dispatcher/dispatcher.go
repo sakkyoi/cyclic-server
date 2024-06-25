@@ -13,7 +13,7 @@ var Dispatcher *redis.Client
 var ctx = context.Background()
 
 var (
-	Signup = "signup"
+	Verify = "verify"
 	Notify = "notify"
 )
 

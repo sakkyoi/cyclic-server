@@ -55,16 +55,16 @@ func Start(ctx context.Context, wg *sync.WaitGroup) {
 
 func SendEmail(ctx context.Context, message *dispatcher.Message) error {
 	switch message.Type {
-	case dispatcher.Signup:
+	case dispatcher.Verify:
 		// generate signup token
 		m := magistrate.New()
 
-		token, err := m.Issue([]string{"signup"}, message.Target)
+		token, err := m.Issue([]string{"verify"}, message.Target)
 		if err != nil {
 			return err
 		}
 
-		scribe.Scribe.Debug("signup token", zap.String("token", token))
+		scribe.Scribe.Debug("verify token", zap.String("user", message.Target), zap.String("token", token))
 
 		// get user email
 		result, err := secretary.Minute.User.Query().Where(user.ID(uuid.MustParse(message.Target))).Only(ctx)
