@@ -495,16 +495,18 @@ type PlanMutation struct {
 	id            *uuid.UUID
 	name          *string
 	description   *string
-	price         *float64
-	addprice      *float64
+	price         *float32
+	addprice      *float32
+	currency      *string
+	exchangeable  *bool
 	start_from    *time.Time
 	duration_type *plan.DurationType
 	duration      *int16
 	addduration   *int16
-	status        *string
+	auto_notify   *bool
 	created_at    *time.Time
 	updated_at    *time.Time
-	auto_notify   *plan.AutoNotify
+	deleted_at    *time.Time
 	clearedFields map[string]struct{}
 	host          *uuid.UUID
 	clearedhost   bool
@@ -703,13 +705,13 @@ func (m *PlanMutation) ResetDescription() {
 }
 
 // SetPrice sets the "price" field.
-func (m *PlanMutation) SetPrice(f float64) {
+func (m *PlanMutation) SetPrice(f float32) {
 	m.price = &f
 	m.addprice = nil
 }
 
 // Price returns the value of the "price" field in the mutation.
-func (m *PlanMutation) Price() (r float64, exists bool) {
+func (m *PlanMutation) Price() (r float32, exists bool) {
 	v := m.price
 	if v == nil {
 		return
@@ -720,7 +722,7 @@ func (m *PlanMutation) Price() (r float64, exists bool) {
 // OldPrice returns the old "price" field's value of the Plan entity.
 // If the Plan object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PlanMutation) OldPrice(ctx context.Context) (v float64, err error) {
+func (m *PlanMutation) OldPrice(ctx context.Context) (v float32, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldPrice is only allowed on UpdateOne operations")
 	}
@@ -735,7 +737,7 @@ func (m *PlanMutation) OldPrice(ctx context.Context) (v float64, err error) {
 }
 
 // AddPrice adds f to the "price" field.
-func (m *PlanMutation) AddPrice(f float64) {
+func (m *PlanMutation) AddPrice(f float32) {
 	if m.addprice != nil {
 		*m.addprice += f
 	} else {
@@ -744,7 +746,7 @@ func (m *PlanMutation) AddPrice(f float64) {
 }
 
 // AddedPrice returns the value that was added to the "price" field in this mutation.
-func (m *PlanMutation) AddedPrice() (r float64, exists bool) {
+func (m *PlanMutation) AddedPrice() (r float32, exists bool) {
 	v := m.addprice
 	if v == nil {
 		return
@@ -756,6 +758,78 @@ func (m *PlanMutation) AddedPrice() (r float64, exists bool) {
 func (m *PlanMutation) ResetPrice() {
 	m.price = nil
 	m.addprice = nil
+}
+
+// SetCurrency sets the "currency" field.
+func (m *PlanMutation) SetCurrency(s string) {
+	m.currency = &s
+}
+
+// Currency returns the value of the "currency" field in the mutation.
+func (m *PlanMutation) Currency() (r string, exists bool) {
+	v := m.currency
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrency returns the old "currency" field's value of the Plan entity.
+// If the Plan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PlanMutation) OldCurrency(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrency is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrency requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrency: %w", err)
+	}
+	return oldValue.Currency, nil
+}
+
+// ResetCurrency resets all changes to the "currency" field.
+func (m *PlanMutation) ResetCurrency() {
+	m.currency = nil
+}
+
+// SetExchangeable sets the "exchangeable" field.
+func (m *PlanMutation) SetExchangeable(b bool) {
+	m.exchangeable = &b
+}
+
+// Exchangeable returns the value of the "exchangeable" field in the mutation.
+func (m *PlanMutation) Exchangeable() (r bool, exists bool) {
+	v := m.exchangeable
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExchangeable returns the old "exchangeable" field's value of the Plan entity.
+// If the Plan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PlanMutation) OldExchangeable(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExchangeable is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExchangeable requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExchangeable: %w", err)
+	}
+	return oldValue.Exchangeable, nil
+}
+
+// ResetExchangeable resets all changes to the "exchangeable" field.
+func (m *PlanMutation) ResetExchangeable() {
+	m.exchangeable = nil
 }
 
 // SetStartFrom sets the "start_from" field.
@@ -886,40 +960,40 @@ func (m *PlanMutation) ResetDuration() {
 	m.addduration = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *PlanMutation) SetStatus(s string) {
-	m.status = &s
+// SetAutoNotify sets the "auto_notify" field.
+func (m *PlanMutation) SetAutoNotify(b bool) {
+	m.auto_notify = &b
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *PlanMutation) Status() (r string, exists bool) {
-	v := m.status
+// AutoNotify returns the value of the "auto_notify" field in the mutation.
+func (m *PlanMutation) AutoNotify() (r bool, exists bool) {
+	v := m.auto_notify
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the Plan entity.
+// OldAutoNotify returns the old "auto_notify" field's value of the Plan entity.
 // If the Plan object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PlanMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *PlanMutation) OldAutoNotify(ctx context.Context) (v bool, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldAutoNotify is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldAutoNotify requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldAutoNotify: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.AutoNotify, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *PlanMutation) ResetStatus() {
-	m.status = nil
+// ResetAutoNotify resets all changes to the "auto_notify" field.
+func (m *PlanMutation) ResetAutoNotify() {
+	m.auto_notify = nil
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -994,40 +1068,53 @@ func (m *PlanMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
-// SetAutoNotify sets the "auto_notify" field.
-func (m *PlanMutation) SetAutoNotify(pn plan.AutoNotify) {
-	m.auto_notify = &pn
+// SetDeletedAt sets the "deleted_at" field.
+func (m *PlanMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
 }
 
-// AutoNotify returns the value of the "auto_notify" field in the mutation.
-func (m *PlanMutation) AutoNotify() (r plan.AutoNotify, exists bool) {
-	v := m.auto_notify
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *PlanMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldAutoNotify returns the old "auto_notify" field's value of the Plan entity.
+// OldDeletedAt returns the old "deleted_at" field's value of the Plan entity.
 // If the Plan object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *PlanMutation) OldAutoNotify(ctx context.Context) (v plan.AutoNotify, err error) {
+func (m *PlanMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAutoNotify is only allowed on UpdateOne operations")
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAutoNotify requires an ID field in the mutation")
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAutoNotify: %w", err)
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
 	}
-	return oldValue.AutoNotify, nil
+	return oldValue.DeletedAt, nil
 }
 
-// ResetAutoNotify resets all changes to the "auto_notify" field.
-func (m *PlanMutation) ResetAutoNotify() {
-	m.auto_notify = nil
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *PlanMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[plan.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *PlanMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[plan.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *PlanMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, plan.FieldDeletedAt)
 }
 
 // SetHostID sets the "host" edge to the User entity by id.
@@ -1103,7 +1190,7 @@ func (m *PlanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PlanMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 12)
 	if m.name != nil {
 		fields = append(fields, plan.FieldName)
 	}
@@ -1112,6 +1199,12 @@ func (m *PlanMutation) Fields() []string {
 	}
 	if m.price != nil {
 		fields = append(fields, plan.FieldPrice)
+	}
+	if m.currency != nil {
+		fields = append(fields, plan.FieldCurrency)
+	}
+	if m.exchangeable != nil {
+		fields = append(fields, plan.FieldExchangeable)
 	}
 	if m.start_from != nil {
 		fields = append(fields, plan.FieldStartFrom)
@@ -1122,8 +1215,8 @@ func (m *PlanMutation) Fields() []string {
 	if m.duration != nil {
 		fields = append(fields, plan.FieldDuration)
 	}
-	if m.status != nil {
-		fields = append(fields, plan.FieldStatus)
+	if m.auto_notify != nil {
+		fields = append(fields, plan.FieldAutoNotify)
 	}
 	if m.created_at != nil {
 		fields = append(fields, plan.FieldCreatedAt)
@@ -1131,8 +1224,8 @@ func (m *PlanMutation) Fields() []string {
 	if m.updated_at != nil {
 		fields = append(fields, plan.FieldUpdatedAt)
 	}
-	if m.auto_notify != nil {
-		fields = append(fields, plan.FieldAutoNotify)
+	if m.deleted_at != nil {
+		fields = append(fields, plan.FieldDeletedAt)
 	}
 	return fields
 }
@@ -1148,20 +1241,24 @@ func (m *PlanMutation) Field(name string) (ent.Value, bool) {
 		return m.Description()
 	case plan.FieldPrice:
 		return m.Price()
+	case plan.FieldCurrency:
+		return m.Currency()
+	case plan.FieldExchangeable:
+		return m.Exchangeable()
 	case plan.FieldStartFrom:
 		return m.StartFrom()
 	case plan.FieldDurationType:
 		return m.DurationType()
 	case plan.FieldDuration:
 		return m.Duration()
-	case plan.FieldStatus:
-		return m.Status()
+	case plan.FieldAutoNotify:
+		return m.AutoNotify()
 	case plan.FieldCreatedAt:
 		return m.CreatedAt()
 	case plan.FieldUpdatedAt:
 		return m.UpdatedAt()
-	case plan.FieldAutoNotify:
-		return m.AutoNotify()
+	case plan.FieldDeletedAt:
+		return m.DeletedAt()
 	}
 	return nil, false
 }
@@ -1177,20 +1274,24 @@ func (m *PlanMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldDescription(ctx)
 	case plan.FieldPrice:
 		return m.OldPrice(ctx)
+	case plan.FieldCurrency:
+		return m.OldCurrency(ctx)
+	case plan.FieldExchangeable:
+		return m.OldExchangeable(ctx)
 	case plan.FieldStartFrom:
 		return m.OldStartFrom(ctx)
 	case plan.FieldDurationType:
 		return m.OldDurationType(ctx)
 	case plan.FieldDuration:
 		return m.OldDuration(ctx)
-	case plan.FieldStatus:
-		return m.OldStatus(ctx)
+	case plan.FieldAutoNotify:
+		return m.OldAutoNotify(ctx)
 	case plan.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case plan.FieldUpdatedAt:
 		return m.OldUpdatedAt(ctx)
-	case plan.FieldAutoNotify:
-		return m.OldAutoNotify(ctx)
+	case plan.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
 	}
 	return nil, fmt.Errorf("unknown Plan field %s", name)
 }
@@ -1215,11 +1316,25 @@ func (m *PlanMutation) SetField(name string, value ent.Value) error {
 		m.SetDescription(v)
 		return nil
 	case plan.FieldPrice:
-		v, ok := value.(float64)
+		v, ok := value.(float32)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPrice(v)
+		return nil
+	case plan.FieldCurrency:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrency(v)
+		return nil
+	case plan.FieldExchangeable:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExchangeable(v)
 		return nil
 	case plan.FieldStartFrom:
 		v, ok := value.(time.Time)
@@ -1242,12 +1357,12 @@ func (m *PlanMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDuration(v)
 		return nil
-	case plan.FieldStatus:
-		v, ok := value.(string)
+	case plan.FieldAutoNotify:
+		v, ok := value.(bool)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetAutoNotify(v)
 		return nil
 	case plan.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -1263,12 +1378,12 @@ func (m *PlanMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetUpdatedAt(v)
 		return nil
-	case plan.FieldAutoNotify:
-		v, ok := value.(plan.AutoNotify)
+	case plan.FieldDeletedAt:
+		v, ok := value.(time.Time)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetAutoNotify(v)
+		m.SetDeletedAt(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Plan field %s", name)
@@ -1306,7 +1421,7 @@ func (m *PlanMutation) AddedField(name string) (ent.Value, bool) {
 func (m *PlanMutation) AddField(name string, value ent.Value) error {
 	switch name {
 	case plan.FieldPrice:
-		v, ok := value.(float64)
+		v, ok := value.(float32)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -1330,6 +1445,9 @@ func (m *PlanMutation) ClearedFields() []string {
 	if m.FieldCleared(plan.FieldDescription) {
 		fields = append(fields, plan.FieldDescription)
 	}
+	if m.FieldCleared(plan.FieldDeletedAt) {
+		fields = append(fields, plan.FieldDeletedAt)
+	}
 	return fields
 }
 
@@ -1346,6 +1464,9 @@ func (m *PlanMutation) ClearField(name string) error {
 	switch name {
 	case plan.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case plan.FieldDeletedAt:
+		m.ClearDeletedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Plan nullable field %s", name)
@@ -1364,6 +1485,12 @@ func (m *PlanMutation) ResetField(name string) error {
 	case plan.FieldPrice:
 		m.ResetPrice()
 		return nil
+	case plan.FieldCurrency:
+		m.ResetCurrency()
+		return nil
+	case plan.FieldExchangeable:
+		m.ResetExchangeable()
+		return nil
 	case plan.FieldStartFrom:
 		m.ResetStartFrom()
 		return nil
@@ -1373,8 +1500,8 @@ func (m *PlanMutation) ResetField(name string) error {
 	case plan.FieldDuration:
 		m.ResetDuration()
 		return nil
-	case plan.FieldStatus:
-		m.ResetStatus()
+	case plan.FieldAutoNotify:
+		m.ResetAutoNotify()
 		return nil
 	case plan.FieldCreatedAt:
 		m.ResetCreatedAt()
@@ -1382,8 +1509,8 @@ func (m *PlanMutation) ResetField(name string) error {
 	case plan.FieldUpdatedAt:
 		m.ResetUpdatedAt()
 		return nil
-	case plan.FieldAutoNotify:
-		m.ResetAutoNotify()
+	case plan.FieldDeletedAt:
+		m.ResetDeletedAt()
 		return nil
 	}
 	return fmt.Errorf("unknown Plan field %s", name)

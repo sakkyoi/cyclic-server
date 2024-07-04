@@ -67,8 +67,18 @@ func Description(v string) predicate.Plan {
 }
 
 // Price applies equality check predicate on the "price" field. It's identical to PriceEQ.
-func Price(v float64) predicate.Plan {
+func Price(v float32) predicate.Plan {
 	return predicate.Plan(sql.FieldEQ(FieldPrice, v))
+}
+
+// Currency applies equality check predicate on the "currency" field. It's identical to CurrencyEQ.
+func Currency(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldEQ(FieldCurrency, v))
+}
+
+// Exchangeable applies equality check predicate on the "exchangeable" field. It's identical to ExchangeableEQ.
+func Exchangeable(v bool) predicate.Plan {
+	return predicate.Plan(sql.FieldEQ(FieldExchangeable, v))
 }
 
 // StartFrom applies equality check predicate on the "start_from" field. It's identical to StartFromEQ.
@@ -81,9 +91,9 @@ func Duration(v int16) predicate.Plan {
 	return predicate.Plan(sql.FieldEQ(FieldDuration, v))
 }
 
-// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
-func Status(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldEQ(FieldStatus, v))
+// AutoNotify applies equality check predicate on the "auto_notify" field. It's identical to AutoNotifyEQ.
+func AutoNotify(v bool) predicate.Plan {
+	return predicate.Plan(sql.FieldEQ(FieldAutoNotify, v))
 }
 
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
@@ -94,6 +104,11 @@ func CreatedAt(v time.Time) predicate.Plan {
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.Plan {
 	return predicate.Plan(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// DeletedAt applies equality check predicate on the "deleted_at" field. It's identical to DeletedAtEQ.
+func DeletedAt(v time.Time) predicate.Plan {
+	return predicate.Plan(sql.FieldEQ(FieldDeletedAt, v))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
@@ -237,43 +252,118 @@ func DescriptionContainsFold(v string) predicate.Plan {
 }
 
 // PriceEQ applies the EQ predicate on the "price" field.
-func PriceEQ(v float64) predicate.Plan {
+func PriceEQ(v float32) predicate.Plan {
 	return predicate.Plan(sql.FieldEQ(FieldPrice, v))
 }
 
 // PriceNEQ applies the NEQ predicate on the "price" field.
-func PriceNEQ(v float64) predicate.Plan {
+func PriceNEQ(v float32) predicate.Plan {
 	return predicate.Plan(sql.FieldNEQ(FieldPrice, v))
 }
 
 // PriceIn applies the In predicate on the "price" field.
-func PriceIn(vs ...float64) predicate.Plan {
+func PriceIn(vs ...float32) predicate.Plan {
 	return predicate.Plan(sql.FieldIn(FieldPrice, vs...))
 }
 
 // PriceNotIn applies the NotIn predicate on the "price" field.
-func PriceNotIn(vs ...float64) predicate.Plan {
+func PriceNotIn(vs ...float32) predicate.Plan {
 	return predicate.Plan(sql.FieldNotIn(FieldPrice, vs...))
 }
 
 // PriceGT applies the GT predicate on the "price" field.
-func PriceGT(v float64) predicate.Plan {
+func PriceGT(v float32) predicate.Plan {
 	return predicate.Plan(sql.FieldGT(FieldPrice, v))
 }
 
 // PriceGTE applies the GTE predicate on the "price" field.
-func PriceGTE(v float64) predicate.Plan {
+func PriceGTE(v float32) predicate.Plan {
 	return predicate.Plan(sql.FieldGTE(FieldPrice, v))
 }
 
 // PriceLT applies the LT predicate on the "price" field.
-func PriceLT(v float64) predicate.Plan {
+func PriceLT(v float32) predicate.Plan {
 	return predicate.Plan(sql.FieldLT(FieldPrice, v))
 }
 
 // PriceLTE applies the LTE predicate on the "price" field.
-func PriceLTE(v float64) predicate.Plan {
+func PriceLTE(v float32) predicate.Plan {
 	return predicate.Plan(sql.FieldLTE(FieldPrice, v))
+}
+
+// CurrencyEQ applies the EQ predicate on the "currency" field.
+func CurrencyEQ(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldEQ(FieldCurrency, v))
+}
+
+// CurrencyNEQ applies the NEQ predicate on the "currency" field.
+func CurrencyNEQ(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldNEQ(FieldCurrency, v))
+}
+
+// CurrencyIn applies the In predicate on the "currency" field.
+func CurrencyIn(vs ...string) predicate.Plan {
+	return predicate.Plan(sql.FieldIn(FieldCurrency, vs...))
+}
+
+// CurrencyNotIn applies the NotIn predicate on the "currency" field.
+func CurrencyNotIn(vs ...string) predicate.Plan {
+	return predicate.Plan(sql.FieldNotIn(FieldCurrency, vs...))
+}
+
+// CurrencyGT applies the GT predicate on the "currency" field.
+func CurrencyGT(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldGT(FieldCurrency, v))
+}
+
+// CurrencyGTE applies the GTE predicate on the "currency" field.
+func CurrencyGTE(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldGTE(FieldCurrency, v))
+}
+
+// CurrencyLT applies the LT predicate on the "currency" field.
+func CurrencyLT(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldLT(FieldCurrency, v))
+}
+
+// CurrencyLTE applies the LTE predicate on the "currency" field.
+func CurrencyLTE(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldLTE(FieldCurrency, v))
+}
+
+// CurrencyContains applies the Contains predicate on the "currency" field.
+func CurrencyContains(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldContains(FieldCurrency, v))
+}
+
+// CurrencyHasPrefix applies the HasPrefix predicate on the "currency" field.
+func CurrencyHasPrefix(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldHasPrefix(FieldCurrency, v))
+}
+
+// CurrencyHasSuffix applies the HasSuffix predicate on the "currency" field.
+func CurrencyHasSuffix(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldHasSuffix(FieldCurrency, v))
+}
+
+// CurrencyEqualFold applies the EqualFold predicate on the "currency" field.
+func CurrencyEqualFold(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldEqualFold(FieldCurrency, v))
+}
+
+// CurrencyContainsFold applies the ContainsFold predicate on the "currency" field.
+func CurrencyContainsFold(v string) predicate.Plan {
+	return predicate.Plan(sql.FieldContainsFold(FieldCurrency, v))
+}
+
+// ExchangeableEQ applies the EQ predicate on the "exchangeable" field.
+func ExchangeableEQ(v bool) predicate.Plan {
+	return predicate.Plan(sql.FieldEQ(FieldExchangeable, v))
+}
+
+// ExchangeableNEQ applies the NEQ predicate on the "exchangeable" field.
+func ExchangeableNEQ(v bool) predicate.Plan {
+	return predicate.Plan(sql.FieldNEQ(FieldExchangeable, v))
 }
 
 // StartFromEQ applies the EQ predicate on the "start_from" field.
@@ -376,69 +466,14 @@ func DurationLTE(v int16) predicate.Plan {
 	return predicate.Plan(sql.FieldLTE(FieldDuration, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldEQ(FieldStatus, v))
+// AutoNotifyEQ applies the EQ predicate on the "auto_notify" field.
+func AutoNotifyEQ(v bool) predicate.Plan {
+	return predicate.Plan(sql.FieldEQ(FieldAutoNotify, v))
 }
 
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldNEQ(FieldStatus, v))
-}
-
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...string) predicate.Plan {
-	return predicate.Plan(sql.FieldIn(FieldStatus, vs...))
-}
-
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...string) predicate.Plan {
-	return predicate.Plan(sql.FieldNotIn(FieldStatus, vs...))
-}
-
-// StatusGT applies the GT predicate on the "status" field.
-func StatusGT(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldGT(FieldStatus, v))
-}
-
-// StatusGTE applies the GTE predicate on the "status" field.
-func StatusGTE(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldGTE(FieldStatus, v))
-}
-
-// StatusLT applies the LT predicate on the "status" field.
-func StatusLT(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldLT(FieldStatus, v))
-}
-
-// StatusLTE applies the LTE predicate on the "status" field.
-func StatusLTE(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldLTE(FieldStatus, v))
-}
-
-// StatusContains applies the Contains predicate on the "status" field.
-func StatusContains(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldContains(FieldStatus, v))
-}
-
-// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
-func StatusHasPrefix(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldHasPrefix(FieldStatus, v))
-}
-
-// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
-func StatusHasSuffix(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldHasSuffix(FieldStatus, v))
-}
-
-// StatusEqualFold applies the EqualFold predicate on the "status" field.
-func StatusEqualFold(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldEqualFold(FieldStatus, v))
-}
-
-// StatusContainsFold applies the ContainsFold predicate on the "status" field.
-func StatusContainsFold(v string) predicate.Plan {
-	return predicate.Plan(sql.FieldContainsFold(FieldStatus, v))
+// AutoNotifyNEQ applies the NEQ predicate on the "auto_notify" field.
+func AutoNotifyNEQ(v bool) predicate.Plan {
+	return predicate.Plan(sql.FieldNEQ(FieldAutoNotify, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
@@ -521,24 +556,54 @@ func UpdatedAtLTE(v time.Time) predicate.Plan {
 	return predicate.Plan(sql.FieldLTE(FieldUpdatedAt, v))
 }
 
-// AutoNotifyEQ applies the EQ predicate on the "auto_notify" field.
-func AutoNotifyEQ(v AutoNotify) predicate.Plan {
-	return predicate.Plan(sql.FieldEQ(FieldAutoNotify, v))
+// DeletedAtEQ applies the EQ predicate on the "deleted_at" field.
+func DeletedAtEQ(v time.Time) predicate.Plan {
+	return predicate.Plan(sql.FieldEQ(FieldDeletedAt, v))
 }
 
-// AutoNotifyNEQ applies the NEQ predicate on the "auto_notify" field.
-func AutoNotifyNEQ(v AutoNotify) predicate.Plan {
-	return predicate.Plan(sql.FieldNEQ(FieldAutoNotify, v))
+// DeletedAtNEQ applies the NEQ predicate on the "deleted_at" field.
+func DeletedAtNEQ(v time.Time) predicate.Plan {
+	return predicate.Plan(sql.FieldNEQ(FieldDeletedAt, v))
 }
 
-// AutoNotifyIn applies the In predicate on the "auto_notify" field.
-func AutoNotifyIn(vs ...AutoNotify) predicate.Plan {
-	return predicate.Plan(sql.FieldIn(FieldAutoNotify, vs...))
+// DeletedAtIn applies the In predicate on the "deleted_at" field.
+func DeletedAtIn(vs ...time.Time) predicate.Plan {
+	return predicate.Plan(sql.FieldIn(FieldDeletedAt, vs...))
 }
 
-// AutoNotifyNotIn applies the NotIn predicate on the "auto_notify" field.
-func AutoNotifyNotIn(vs ...AutoNotify) predicate.Plan {
-	return predicate.Plan(sql.FieldNotIn(FieldAutoNotify, vs...))
+// DeletedAtNotIn applies the NotIn predicate on the "deleted_at" field.
+func DeletedAtNotIn(vs ...time.Time) predicate.Plan {
+	return predicate.Plan(sql.FieldNotIn(FieldDeletedAt, vs...))
+}
+
+// DeletedAtGT applies the GT predicate on the "deleted_at" field.
+func DeletedAtGT(v time.Time) predicate.Plan {
+	return predicate.Plan(sql.FieldGT(FieldDeletedAt, v))
+}
+
+// DeletedAtGTE applies the GTE predicate on the "deleted_at" field.
+func DeletedAtGTE(v time.Time) predicate.Plan {
+	return predicate.Plan(sql.FieldGTE(FieldDeletedAt, v))
+}
+
+// DeletedAtLT applies the LT predicate on the "deleted_at" field.
+func DeletedAtLT(v time.Time) predicate.Plan {
+	return predicate.Plan(sql.FieldLT(FieldDeletedAt, v))
+}
+
+// DeletedAtLTE applies the LTE predicate on the "deleted_at" field.
+func DeletedAtLTE(v time.Time) predicate.Plan {
+	return predicate.Plan(sql.FieldLTE(FieldDeletedAt, v))
+}
+
+// DeletedAtIsNil applies the IsNil predicate on the "deleted_at" field.
+func DeletedAtIsNil() predicate.Plan {
+	return predicate.Plan(sql.FieldIsNull(FieldDeletedAt))
+}
+
+// DeletedAtNotNil applies the NotNil predicate on the "deleted_at" field.
+func DeletedAtNotNil() predicate.Plan {
+	return predicate.Plan(sql.FieldNotNull(FieldDeletedAt))
 }
 
 // HasHost applies the HasEdge predicate on the "host" edge.

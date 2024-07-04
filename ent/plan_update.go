@@ -65,14 +65,14 @@ func (pu *PlanUpdate) ClearDescription() *PlanUpdate {
 }
 
 // SetPrice sets the "price" field.
-func (pu *PlanUpdate) SetPrice(f float64) *PlanUpdate {
+func (pu *PlanUpdate) SetPrice(f float32) *PlanUpdate {
 	pu.mutation.ResetPrice()
 	pu.mutation.SetPrice(f)
 	return pu
 }
 
 // SetNillablePrice sets the "price" field if the given value is not nil.
-func (pu *PlanUpdate) SetNillablePrice(f *float64) *PlanUpdate {
+func (pu *PlanUpdate) SetNillablePrice(f *float32) *PlanUpdate {
 	if f != nil {
 		pu.SetPrice(*f)
 	}
@@ -80,8 +80,36 @@ func (pu *PlanUpdate) SetNillablePrice(f *float64) *PlanUpdate {
 }
 
 // AddPrice adds f to the "price" field.
-func (pu *PlanUpdate) AddPrice(f float64) *PlanUpdate {
+func (pu *PlanUpdate) AddPrice(f float32) *PlanUpdate {
 	pu.mutation.AddPrice(f)
+	return pu
+}
+
+// SetCurrency sets the "currency" field.
+func (pu *PlanUpdate) SetCurrency(s string) *PlanUpdate {
+	pu.mutation.SetCurrency(s)
+	return pu
+}
+
+// SetNillableCurrency sets the "currency" field if the given value is not nil.
+func (pu *PlanUpdate) SetNillableCurrency(s *string) *PlanUpdate {
+	if s != nil {
+		pu.SetCurrency(*s)
+	}
+	return pu
+}
+
+// SetExchangeable sets the "exchangeable" field.
+func (pu *PlanUpdate) SetExchangeable(b bool) *PlanUpdate {
+	pu.mutation.SetExchangeable(b)
+	return pu
+}
+
+// SetNillableExchangeable sets the "exchangeable" field if the given value is not nil.
+func (pu *PlanUpdate) SetNillableExchangeable(b *bool) *PlanUpdate {
+	if b != nil {
+		pu.SetExchangeable(*b)
+	}
 	return pu
 }
 
@@ -134,16 +162,16 @@ func (pu *PlanUpdate) AddDuration(i int16) *PlanUpdate {
 	return pu
 }
 
-// SetStatus sets the "status" field.
-func (pu *PlanUpdate) SetStatus(s string) *PlanUpdate {
-	pu.mutation.SetStatus(s)
+// SetAutoNotify sets the "auto_notify" field.
+func (pu *PlanUpdate) SetAutoNotify(b bool) *PlanUpdate {
+	pu.mutation.SetAutoNotify(b)
 	return pu
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (pu *PlanUpdate) SetNillableStatus(s *string) *PlanUpdate {
-	if s != nil {
-		pu.SetStatus(*s)
+// SetNillableAutoNotify sets the "auto_notify" field if the given value is not nil.
+func (pu *PlanUpdate) SetNillableAutoNotify(b *bool) *PlanUpdate {
+	if b != nil {
+		pu.SetAutoNotify(*b)
 	}
 	return pu
 }
@@ -154,17 +182,23 @@ func (pu *PlanUpdate) SetUpdatedAt(t time.Time) *PlanUpdate {
 	return pu
 }
 
-// SetAutoNotify sets the "auto_notify" field.
-func (pu *PlanUpdate) SetAutoNotify(pn plan.AutoNotify) *PlanUpdate {
-	pu.mutation.SetAutoNotify(pn)
+// SetDeletedAt sets the "deleted_at" field.
+func (pu *PlanUpdate) SetDeletedAt(t time.Time) *PlanUpdate {
+	pu.mutation.SetDeletedAt(t)
 	return pu
 }
 
-// SetNillableAutoNotify sets the "auto_notify" field if the given value is not nil.
-func (pu *PlanUpdate) SetNillableAutoNotify(pn *plan.AutoNotify) *PlanUpdate {
-	if pn != nil {
-		pu.SetAutoNotify(*pn)
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (pu *PlanUpdate) SetNillableDeletedAt(t *time.Time) *PlanUpdate {
+	if t != nil {
+		pu.SetDeletedAt(*t)
 	}
+	return pu
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (pu *PlanUpdate) ClearDeletedAt() *PlanUpdate {
+	pu.mutation.ClearDeletedAt()
 	return pu
 }
 
@@ -233,11 +267,6 @@ func (pu *PlanUpdate) check() error {
 			return &ValidationError{Name: "duration_type", err: fmt.Errorf(`ent: validator failed for field "Plan.duration_type": %w`, err)}
 		}
 	}
-	if v, ok := pu.mutation.AutoNotify(); ok {
-		if err := plan.AutoNotifyValidator(v); err != nil {
-			return &ValidationError{Name: "auto_notify", err: fmt.Errorf(`ent: validator failed for field "Plan.auto_notify": %w`, err)}
-		}
-	}
 	if _, ok := pu.mutation.HostID(); pu.mutation.HostCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Plan.host"`)
 	}
@@ -266,10 +295,16 @@ func (pu *PlanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		_spec.ClearField(plan.FieldDescription, field.TypeString)
 	}
 	if value, ok := pu.mutation.Price(); ok {
-		_spec.SetField(plan.FieldPrice, field.TypeFloat64, value)
+		_spec.SetField(plan.FieldPrice, field.TypeFloat32, value)
 	}
 	if value, ok := pu.mutation.AddedPrice(); ok {
-		_spec.AddField(plan.FieldPrice, field.TypeFloat64, value)
+		_spec.AddField(plan.FieldPrice, field.TypeFloat32, value)
+	}
+	if value, ok := pu.mutation.Currency(); ok {
+		_spec.SetField(plan.FieldCurrency, field.TypeString, value)
+	}
+	if value, ok := pu.mutation.Exchangeable(); ok {
+		_spec.SetField(plan.FieldExchangeable, field.TypeBool, value)
 	}
 	if value, ok := pu.mutation.StartFrom(); ok {
 		_spec.SetField(plan.FieldStartFrom, field.TypeTime, value)
@@ -283,14 +318,17 @@ func (pu *PlanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := pu.mutation.AddedDuration(); ok {
 		_spec.AddField(plan.FieldDuration, field.TypeInt16, value)
 	}
-	if value, ok := pu.mutation.Status(); ok {
-		_spec.SetField(plan.FieldStatus, field.TypeString, value)
+	if value, ok := pu.mutation.AutoNotify(); ok {
+		_spec.SetField(plan.FieldAutoNotify, field.TypeBool, value)
 	}
 	if value, ok := pu.mutation.UpdatedAt(); ok {
 		_spec.SetField(plan.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := pu.mutation.AutoNotify(); ok {
-		_spec.SetField(plan.FieldAutoNotify, field.TypeEnum, value)
+	if value, ok := pu.mutation.DeletedAt(); ok {
+		_spec.SetField(plan.FieldDeletedAt, field.TypeTime, value)
+	}
+	if pu.mutation.DeletedAtCleared() {
+		_spec.ClearField(plan.FieldDeletedAt, field.TypeTime)
 	}
 	if pu.mutation.HostCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -376,14 +414,14 @@ func (puo *PlanUpdateOne) ClearDescription() *PlanUpdateOne {
 }
 
 // SetPrice sets the "price" field.
-func (puo *PlanUpdateOne) SetPrice(f float64) *PlanUpdateOne {
+func (puo *PlanUpdateOne) SetPrice(f float32) *PlanUpdateOne {
 	puo.mutation.ResetPrice()
 	puo.mutation.SetPrice(f)
 	return puo
 }
 
 // SetNillablePrice sets the "price" field if the given value is not nil.
-func (puo *PlanUpdateOne) SetNillablePrice(f *float64) *PlanUpdateOne {
+func (puo *PlanUpdateOne) SetNillablePrice(f *float32) *PlanUpdateOne {
 	if f != nil {
 		puo.SetPrice(*f)
 	}
@@ -391,8 +429,36 @@ func (puo *PlanUpdateOne) SetNillablePrice(f *float64) *PlanUpdateOne {
 }
 
 // AddPrice adds f to the "price" field.
-func (puo *PlanUpdateOne) AddPrice(f float64) *PlanUpdateOne {
+func (puo *PlanUpdateOne) AddPrice(f float32) *PlanUpdateOne {
 	puo.mutation.AddPrice(f)
+	return puo
+}
+
+// SetCurrency sets the "currency" field.
+func (puo *PlanUpdateOne) SetCurrency(s string) *PlanUpdateOne {
+	puo.mutation.SetCurrency(s)
+	return puo
+}
+
+// SetNillableCurrency sets the "currency" field if the given value is not nil.
+func (puo *PlanUpdateOne) SetNillableCurrency(s *string) *PlanUpdateOne {
+	if s != nil {
+		puo.SetCurrency(*s)
+	}
+	return puo
+}
+
+// SetExchangeable sets the "exchangeable" field.
+func (puo *PlanUpdateOne) SetExchangeable(b bool) *PlanUpdateOne {
+	puo.mutation.SetExchangeable(b)
+	return puo
+}
+
+// SetNillableExchangeable sets the "exchangeable" field if the given value is not nil.
+func (puo *PlanUpdateOne) SetNillableExchangeable(b *bool) *PlanUpdateOne {
+	if b != nil {
+		puo.SetExchangeable(*b)
+	}
 	return puo
 }
 
@@ -445,16 +511,16 @@ func (puo *PlanUpdateOne) AddDuration(i int16) *PlanUpdateOne {
 	return puo
 }
 
-// SetStatus sets the "status" field.
-func (puo *PlanUpdateOne) SetStatus(s string) *PlanUpdateOne {
-	puo.mutation.SetStatus(s)
+// SetAutoNotify sets the "auto_notify" field.
+func (puo *PlanUpdateOne) SetAutoNotify(b bool) *PlanUpdateOne {
+	puo.mutation.SetAutoNotify(b)
 	return puo
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (puo *PlanUpdateOne) SetNillableStatus(s *string) *PlanUpdateOne {
-	if s != nil {
-		puo.SetStatus(*s)
+// SetNillableAutoNotify sets the "auto_notify" field if the given value is not nil.
+func (puo *PlanUpdateOne) SetNillableAutoNotify(b *bool) *PlanUpdateOne {
+	if b != nil {
+		puo.SetAutoNotify(*b)
 	}
 	return puo
 }
@@ -465,17 +531,23 @@ func (puo *PlanUpdateOne) SetUpdatedAt(t time.Time) *PlanUpdateOne {
 	return puo
 }
 
-// SetAutoNotify sets the "auto_notify" field.
-func (puo *PlanUpdateOne) SetAutoNotify(pn plan.AutoNotify) *PlanUpdateOne {
-	puo.mutation.SetAutoNotify(pn)
+// SetDeletedAt sets the "deleted_at" field.
+func (puo *PlanUpdateOne) SetDeletedAt(t time.Time) *PlanUpdateOne {
+	puo.mutation.SetDeletedAt(t)
 	return puo
 }
 
-// SetNillableAutoNotify sets the "auto_notify" field if the given value is not nil.
-func (puo *PlanUpdateOne) SetNillableAutoNotify(pn *plan.AutoNotify) *PlanUpdateOne {
-	if pn != nil {
-		puo.SetAutoNotify(*pn)
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (puo *PlanUpdateOne) SetNillableDeletedAt(t *time.Time) *PlanUpdateOne {
+	if t != nil {
+		puo.SetDeletedAt(*t)
 	}
+	return puo
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (puo *PlanUpdateOne) ClearDeletedAt() *PlanUpdateOne {
+	puo.mutation.ClearDeletedAt()
 	return puo
 }
 
@@ -557,11 +629,6 @@ func (puo *PlanUpdateOne) check() error {
 			return &ValidationError{Name: "duration_type", err: fmt.Errorf(`ent: validator failed for field "Plan.duration_type": %w`, err)}
 		}
 	}
-	if v, ok := puo.mutation.AutoNotify(); ok {
-		if err := plan.AutoNotifyValidator(v); err != nil {
-			return &ValidationError{Name: "auto_notify", err: fmt.Errorf(`ent: validator failed for field "Plan.auto_notify": %w`, err)}
-		}
-	}
 	if _, ok := puo.mutation.HostID(); puo.mutation.HostCleared() && !ok {
 		return errors.New(`ent: clearing a required unique edge "Plan.host"`)
 	}
@@ -607,10 +674,16 @@ func (puo *PlanUpdateOne) sqlSave(ctx context.Context) (_node *Plan, err error) 
 		_spec.ClearField(plan.FieldDescription, field.TypeString)
 	}
 	if value, ok := puo.mutation.Price(); ok {
-		_spec.SetField(plan.FieldPrice, field.TypeFloat64, value)
+		_spec.SetField(plan.FieldPrice, field.TypeFloat32, value)
 	}
 	if value, ok := puo.mutation.AddedPrice(); ok {
-		_spec.AddField(plan.FieldPrice, field.TypeFloat64, value)
+		_spec.AddField(plan.FieldPrice, field.TypeFloat32, value)
+	}
+	if value, ok := puo.mutation.Currency(); ok {
+		_spec.SetField(plan.FieldCurrency, field.TypeString, value)
+	}
+	if value, ok := puo.mutation.Exchangeable(); ok {
+		_spec.SetField(plan.FieldExchangeable, field.TypeBool, value)
 	}
 	if value, ok := puo.mutation.StartFrom(); ok {
 		_spec.SetField(plan.FieldStartFrom, field.TypeTime, value)
@@ -624,14 +697,17 @@ func (puo *PlanUpdateOne) sqlSave(ctx context.Context) (_node *Plan, err error) 
 	if value, ok := puo.mutation.AddedDuration(); ok {
 		_spec.AddField(plan.FieldDuration, field.TypeInt16, value)
 	}
-	if value, ok := puo.mutation.Status(); ok {
-		_spec.SetField(plan.FieldStatus, field.TypeString, value)
+	if value, ok := puo.mutation.AutoNotify(); ok {
+		_spec.SetField(plan.FieldAutoNotify, field.TypeBool, value)
 	}
 	if value, ok := puo.mutation.UpdatedAt(); ok {
 		_spec.SetField(plan.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := puo.mutation.AutoNotify(); ok {
-		_spec.SetField(plan.FieldAutoNotify, field.TypeEnum, value)
+	if value, ok := puo.mutation.DeletedAt(); ok {
+		_spec.SetField(plan.FieldDeletedAt, field.TypeTime, value)
+	}
+	if puo.mutation.DeletedAtCleared() {
+		_spec.ClearField(plan.FieldDeletedAt, field.TypeTime)
 	}
 	if puo.mutation.HostCleared() {
 		edge := &sqlgraph.EdgeSpec{

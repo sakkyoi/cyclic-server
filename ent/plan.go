@@ -24,21 +24,25 @@ type Plan struct {
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Price holds the value of the "price" field.
-	Price float64 `json:"price,omitempty"`
+	Price float32 `json:"price,omitempty"`
+	// Currency holds the value of the "currency" field.
+	Currency string `json:"currency,omitempty"`
+	// Exchangeable holds the value of the "exchangeable" field.
+	Exchangeable bool `json:"exchangeable,omitempty"`
 	// StartFrom holds the value of the "start_from" field.
 	StartFrom time.Time `json:"start_from,omitempty"`
 	// DurationType holds the value of the "duration_type" field.
 	DurationType plan.DurationType `json:"duration_type,omitempty"`
 	// Duration holds the value of the "duration" field.
 	Duration int16 `json:"duration,omitempty"`
-	// Status holds the value of the "status" field.
-	Status string `json:"status,omitempty"`
+	// AutoNotify holds the value of the "auto_notify" field.
+	AutoNotify bool `json:"auto_notify,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
-	// AutoNotify holds the value of the "auto_notify" field.
-	AutoNotify plan.AutoNotify `json:"auto_notify,omitempty"`
+	// DeletedAt holds the value of the "deleted_at" field.
+	DeletedAt time.Time `json:"deleted_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the PlanQuery when eager-loading is set.
 	Edges        PlanEdges `json:"edges"`
@@ -71,13 +75,15 @@ func (*Plan) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case plan.FieldExchangeable, plan.FieldAutoNotify:
+			values[i] = new(sql.NullBool)
 		case plan.FieldPrice:
 			values[i] = new(sql.NullFloat64)
 		case plan.FieldDuration:
 			values[i] = new(sql.NullInt64)
-		case plan.FieldName, plan.FieldDescription, plan.FieldDurationType, plan.FieldStatus, plan.FieldAutoNotify:
+		case plan.FieldName, plan.FieldDescription, plan.FieldCurrency, plan.FieldDurationType:
 			values[i] = new(sql.NullString)
-		case plan.FieldStartFrom, plan.FieldCreatedAt, plan.FieldUpdatedAt:
+		case plan.FieldStartFrom, plan.FieldCreatedAt, plan.FieldUpdatedAt, plan.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
 		case plan.FieldID:
 			values[i] = new(uuid.UUID)
@@ -120,7 +126,19 @@ func (pl *Plan) assignValues(columns []string, values []any) error {
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
 				return fmt.Errorf("unexpected type %T for field price", values[i])
 			} else if value.Valid {
-				pl.Price = value.Float64
+				pl.Price = float32(value.Float64)
+			}
+		case plan.FieldCurrency:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field currency", values[i])
+			} else if value.Valid {
+				pl.Currency = value.String
+			}
+		case plan.FieldExchangeable:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field exchangeable", values[i])
+			} else if value.Valid {
+				pl.Exchangeable = value.Bool
 			}
 		case plan.FieldStartFrom:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -140,11 +158,11 @@ func (pl *Plan) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pl.Duration = int16(value.Int64)
 			}
-		case plan.FieldStatus:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
+		case plan.FieldAutoNotify:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field auto_notify", values[i])
 			} else if value.Valid {
-				pl.Status = value.String
+				pl.AutoNotify = value.Bool
 			}
 		case plan.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -158,11 +176,11 @@ func (pl *Plan) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				pl.UpdatedAt = value.Time
 			}
-		case plan.FieldAutoNotify:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field auto_notify", values[i])
+		case plan.FieldDeletedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field deleted_at", values[i])
 			} else if value.Valid {
-				pl.AutoNotify = plan.AutoNotify(value.String)
+				pl.DeletedAt = value.Time
 			}
 		case plan.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
@@ -221,6 +239,12 @@ func (pl *Plan) String() string {
 	builder.WriteString("price=")
 	builder.WriteString(fmt.Sprintf("%v", pl.Price))
 	builder.WriteString(", ")
+	builder.WriteString("currency=")
+	builder.WriteString(pl.Currency)
+	builder.WriteString(", ")
+	builder.WriteString("exchangeable=")
+	builder.WriteString(fmt.Sprintf("%v", pl.Exchangeable))
+	builder.WriteString(", ")
 	builder.WriteString("start_from=")
 	builder.WriteString(pl.StartFrom.Format(time.ANSIC))
 	builder.WriteString(", ")
@@ -230,8 +254,8 @@ func (pl *Plan) String() string {
 	builder.WriteString("duration=")
 	builder.WriteString(fmt.Sprintf("%v", pl.Duration))
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(pl.Status)
+	builder.WriteString("auto_notify=")
+	builder.WriteString(fmt.Sprintf("%v", pl.AutoNotify))
 	builder.WriteString(", ")
 	builder.WriteString("created_at=")
 	builder.WriteString(pl.CreatedAt.Format(time.ANSIC))
@@ -239,8 +263,8 @@ func (pl *Plan) String() string {
 	builder.WriteString("updated_at=")
 	builder.WriteString(pl.UpdatedAt.Format(time.ANSIC))
 	builder.WriteString(", ")
-	builder.WriteString("auto_notify=")
-	builder.WriteString(fmt.Sprintf("%v", pl.AutoNotify))
+	builder.WriteString("deleted_at=")
+	builder.WriteString(pl.DeletedAt.Format(time.ANSIC))
 	builder.WriteByte(')')
 	return builder.String()
 }

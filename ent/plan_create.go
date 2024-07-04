@@ -43,8 +43,28 @@ func (pc *PlanCreate) SetNillableDescription(s *string) *PlanCreate {
 }
 
 // SetPrice sets the "price" field.
-func (pc *PlanCreate) SetPrice(f float64) *PlanCreate {
+func (pc *PlanCreate) SetPrice(f float32) *PlanCreate {
 	pc.mutation.SetPrice(f)
+	return pc
+}
+
+// SetCurrency sets the "currency" field.
+func (pc *PlanCreate) SetCurrency(s string) *PlanCreate {
+	pc.mutation.SetCurrency(s)
+	return pc
+}
+
+// SetExchangeable sets the "exchangeable" field.
+func (pc *PlanCreate) SetExchangeable(b bool) *PlanCreate {
+	pc.mutation.SetExchangeable(b)
+	return pc
+}
+
+// SetNillableExchangeable sets the "exchangeable" field if the given value is not nil.
+func (pc *PlanCreate) SetNillableExchangeable(b *bool) *PlanCreate {
+	if b != nil {
+		pc.SetExchangeable(*b)
+	}
 	return pc
 }
 
@@ -66,9 +86,17 @@ func (pc *PlanCreate) SetDuration(i int16) *PlanCreate {
 	return pc
 }
 
-// SetStatus sets the "status" field.
-func (pc *PlanCreate) SetStatus(s string) *PlanCreate {
-	pc.mutation.SetStatus(s)
+// SetAutoNotify sets the "auto_notify" field.
+func (pc *PlanCreate) SetAutoNotify(b bool) *PlanCreate {
+	pc.mutation.SetAutoNotify(b)
+	return pc
+}
+
+// SetNillableAutoNotify sets the "auto_notify" field if the given value is not nil.
+func (pc *PlanCreate) SetNillableAutoNotify(b *bool) *PlanCreate {
+	if b != nil {
+		pc.SetAutoNotify(*b)
+	}
 	return pc
 }
 
@@ -100,16 +128,16 @@ func (pc *PlanCreate) SetNillableUpdatedAt(t *time.Time) *PlanCreate {
 	return pc
 }
 
-// SetAutoNotify sets the "auto_notify" field.
-func (pc *PlanCreate) SetAutoNotify(pn plan.AutoNotify) *PlanCreate {
-	pc.mutation.SetAutoNotify(pn)
+// SetDeletedAt sets the "deleted_at" field.
+func (pc *PlanCreate) SetDeletedAt(t time.Time) *PlanCreate {
+	pc.mutation.SetDeletedAt(t)
 	return pc
 }
 
-// SetNillableAutoNotify sets the "auto_notify" field if the given value is not nil.
-func (pc *PlanCreate) SetNillableAutoNotify(pn *plan.AutoNotify) *PlanCreate {
-	if pn != nil {
-		pc.SetAutoNotify(*pn)
+// SetNillableDeletedAt sets the "deleted_at" field if the given value is not nil.
+func (pc *PlanCreate) SetNillableDeletedAt(t *time.Time) *PlanCreate {
+	if t != nil {
+		pc.SetDeletedAt(*t)
 	}
 	return pc
 }
@@ -174,6 +202,14 @@ func (pc *PlanCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pc *PlanCreate) defaults() {
+	if _, ok := pc.mutation.Exchangeable(); !ok {
+		v := plan.DefaultExchangeable
+		pc.mutation.SetExchangeable(v)
+	}
+	if _, ok := pc.mutation.AutoNotify(); !ok {
+		v := plan.DefaultAutoNotify
+		pc.mutation.SetAutoNotify(v)
+	}
 	if _, ok := pc.mutation.CreatedAt(); !ok {
 		v := plan.DefaultCreatedAt()
 		pc.mutation.SetCreatedAt(v)
@@ -181,10 +217,6 @@ func (pc *PlanCreate) defaults() {
 	if _, ok := pc.mutation.UpdatedAt(); !ok {
 		v := plan.DefaultUpdatedAt()
 		pc.mutation.SetUpdatedAt(v)
-	}
-	if _, ok := pc.mutation.AutoNotify(); !ok {
-		v := plan.DefaultAutoNotify
-		pc.mutation.SetAutoNotify(v)
 	}
 	if _, ok := pc.mutation.ID(); !ok {
 		v := plan.DefaultID()
@@ -200,6 +232,12 @@ func (pc *PlanCreate) check() error {
 	if _, ok := pc.mutation.Price(); !ok {
 		return &ValidationError{Name: "price", err: errors.New(`ent: missing required field "Plan.price"`)}
 	}
+	if _, ok := pc.mutation.Currency(); !ok {
+		return &ValidationError{Name: "currency", err: errors.New(`ent: missing required field "Plan.currency"`)}
+	}
+	if _, ok := pc.mutation.Exchangeable(); !ok {
+		return &ValidationError{Name: "exchangeable", err: errors.New(`ent: missing required field "Plan.exchangeable"`)}
+	}
 	if _, ok := pc.mutation.StartFrom(); !ok {
 		return &ValidationError{Name: "start_from", err: errors.New(`ent: missing required field "Plan.start_from"`)}
 	}
@@ -214,22 +252,14 @@ func (pc *PlanCreate) check() error {
 	if _, ok := pc.mutation.Duration(); !ok {
 		return &ValidationError{Name: "duration", err: errors.New(`ent: missing required field "Plan.duration"`)}
 	}
-	if _, ok := pc.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Plan.status"`)}
+	if _, ok := pc.mutation.AutoNotify(); !ok {
+		return &ValidationError{Name: "auto_notify", err: errors.New(`ent: missing required field "Plan.auto_notify"`)}
 	}
 	if _, ok := pc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Plan.created_at"`)}
 	}
 	if _, ok := pc.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "Plan.updated_at"`)}
-	}
-	if _, ok := pc.mutation.AutoNotify(); !ok {
-		return &ValidationError{Name: "auto_notify", err: errors.New(`ent: missing required field "Plan.auto_notify"`)}
-	}
-	if v, ok := pc.mutation.AutoNotify(); ok {
-		if err := plan.AutoNotifyValidator(v); err != nil {
-			return &ValidationError{Name: "auto_notify", err: fmt.Errorf(`ent: validator failed for field "Plan.auto_notify": %w`, err)}
-		}
 	}
 	if _, ok := pc.mutation.HostID(); !ok {
 		return &ValidationError{Name: "host", err: errors.New(`ent: missing required edge "Plan.host"`)}
@@ -278,8 +308,16 @@ func (pc *PlanCreate) createSpec() (*Plan, *sqlgraph.CreateSpec) {
 		_node.Description = value
 	}
 	if value, ok := pc.mutation.Price(); ok {
-		_spec.SetField(plan.FieldPrice, field.TypeFloat64, value)
+		_spec.SetField(plan.FieldPrice, field.TypeFloat32, value)
 		_node.Price = value
+	}
+	if value, ok := pc.mutation.Currency(); ok {
+		_spec.SetField(plan.FieldCurrency, field.TypeString, value)
+		_node.Currency = value
+	}
+	if value, ok := pc.mutation.Exchangeable(); ok {
+		_spec.SetField(plan.FieldExchangeable, field.TypeBool, value)
+		_node.Exchangeable = value
 	}
 	if value, ok := pc.mutation.StartFrom(); ok {
 		_spec.SetField(plan.FieldStartFrom, field.TypeTime, value)
@@ -293,9 +331,9 @@ func (pc *PlanCreate) createSpec() (*Plan, *sqlgraph.CreateSpec) {
 		_spec.SetField(plan.FieldDuration, field.TypeInt16, value)
 		_node.Duration = value
 	}
-	if value, ok := pc.mutation.Status(); ok {
-		_spec.SetField(plan.FieldStatus, field.TypeString, value)
-		_node.Status = value
+	if value, ok := pc.mutation.AutoNotify(); ok {
+		_spec.SetField(plan.FieldAutoNotify, field.TypeBool, value)
+		_node.AutoNotify = value
 	}
 	if value, ok := pc.mutation.CreatedAt(); ok {
 		_spec.SetField(plan.FieldCreatedAt, field.TypeTime, value)
@@ -305,9 +343,9 @@ func (pc *PlanCreate) createSpec() (*Plan, *sqlgraph.CreateSpec) {
 		_spec.SetField(plan.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
 	}
-	if value, ok := pc.mutation.AutoNotify(); ok {
-		_spec.SetField(plan.FieldAutoNotify, field.TypeEnum, value)
-		_node.AutoNotify = value
+	if value, ok := pc.mutation.DeletedAt(); ok {
+		_spec.SetField(plan.FieldDeletedAt, field.TypeTime, value)
+		_node.DeletedAt = value
 	}
 	if nodes := pc.mutation.HostIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

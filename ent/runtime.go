@@ -25,12 +25,20 @@ func init() {
 	link.DefaultID = linkDescID.Default.(func() uuid.UUID)
 	planFields := schema.Plan{}.Fields()
 	_ = planFields
+	// planDescExchangeable is the schema descriptor for exchangeable field.
+	planDescExchangeable := planFields[5].Descriptor()
+	// plan.DefaultExchangeable holds the default value on creation for the exchangeable field.
+	plan.DefaultExchangeable = planDescExchangeable.Default.(bool)
+	// planDescAutoNotify is the schema descriptor for auto_notify field.
+	planDescAutoNotify := planFields[9].Descriptor()
+	// plan.DefaultAutoNotify holds the default value on creation for the auto_notify field.
+	plan.DefaultAutoNotify = planDescAutoNotify.Default.(bool)
 	// planDescCreatedAt is the schema descriptor for created_at field.
-	planDescCreatedAt := planFields[8].Descriptor()
+	planDescCreatedAt := planFields[10].Descriptor()
 	// plan.DefaultCreatedAt holds the default value on creation for the created_at field.
 	plan.DefaultCreatedAt = planDescCreatedAt.Default.(func() time.Time)
 	// planDescUpdatedAt is the schema descriptor for updated_at field.
-	planDescUpdatedAt := planFields[9].Descriptor()
+	planDescUpdatedAt := planFields[11].Descriptor()
 	// plan.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	plan.DefaultUpdatedAt = planDescUpdatedAt.Default.(func() time.Time)
 	// plan.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
@@ -51,6 +59,24 @@ func init() {
 	subscribe.DefaultID = subscribeDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
+	// userDescUsername is the schema descriptor for username field.
+	userDescUsername := userFields[1].Descriptor()
+	// user.UsernameValidator is a validator for the "username" field. It is called by the builders before save.
+	user.UsernameValidator = func() func(string) error {
+		validators := userDescUsername.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(username string) error {
+			for _, fn := range fns {
+				if err := fn(username); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	// userDescName is the schema descriptor for name field.
 	userDescName := userFields[4].Descriptor()
 	// user.DefaultName holds the default value on creation for the name field.

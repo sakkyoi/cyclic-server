@@ -34,14 +34,16 @@ var (
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "name", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true, Size: 1000},
-		{Name: "price", Type: field.TypeFloat64, SchemaType: map[string]string{"mysql": "decimal(9,2)", "postgres": "numeric"}},
+		{Name: "price", Type: field.TypeFloat32, SchemaType: map[string]string{"mysql": "decimal(9,2)", "postgres": "numeric(11,2)"}},
+		{Name: "currency", Type: field.TypeString},
+		{Name: "exchangeable", Type: field.TypeBool, Default: false},
 		{Name: "start_from", Type: field.TypeTime},
 		{Name: "duration_type", Type: field.TypeEnum, Enums: []string{"days", "months", "years"}},
 		{Name: "duration", Type: field.TypeInt16},
-		{Name: "status", Type: field.TypeString},
+		{Name: "auto_notify", Type: field.TypeBool, Default: true},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
-		{Name: "auto_notify", Type: field.TypeEnum, Enums: []string{"automatic", "manual"}, Default: "automatic"},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true},
 		{Name: "user_plans", Type: field.TypeUUID},
 	}
 	// PlansTable holds the schema information for the "plans" table.
@@ -52,7 +54,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "plans_users_plans",
-				Columns:    []*schema.Column{PlansColumns[11]},
+				Columns:    []*schema.Column{PlansColumns[13]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -73,7 +75,7 @@ var (
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "username", Type: field.TypeString, Unique: true, Nullable: true},
+		{Name: "username", Type: field.TypeString, Unique: true, Nullable: true, Size: 15},
 		{Name: "password", Type: field.TypeBytes, Nullable: true},
 		{Name: "email", Type: field.TypeString, Unique: true, Nullable: true},
 		{Name: "name", Type: field.TypeString, Default: "unknown"},

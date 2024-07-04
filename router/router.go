@@ -68,6 +68,12 @@ func build() *gin.Engine {
 		apiGroup.POST("/auth", a.User.Auth)
 
 		apiGroup.GET("/user", jwt.JWT(), a.User.Get)
+
+		// plan
+		apiGroup.POST("/plan", jwt.JWT(), a.Plan.Create)
+		apiGroup.PUT("/plan/:id", jwt.JWT(), a.Plan.Update)
+		apiGroup.DELETE("/plan/:id", jwt.JWT(), a.Plan.Remove)
+		apiGroup.GET("/plan", jwt.JWT(), a.Plan.List)
 	}
 
 	return r

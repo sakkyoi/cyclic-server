@@ -8,6 +8,7 @@ var (
 	ErrorUnauthorized     = "unauthorized"
 	ErrorUserNotFound     = "user_not_found"
 	ErrorUserNotActivated = "user_not_activated"
+	ErrorPlanNotFound     = "plan_not_found"
 )
 
 type Response struct {

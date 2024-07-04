@@ -22,20 +22,24 @@ const (
 	FieldDescription = "description"
 	// FieldPrice holds the string denoting the price field in the database.
 	FieldPrice = "price"
+	// FieldCurrency holds the string denoting the currency field in the database.
+	FieldCurrency = "currency"
+	// FieldExchangeable holds the string denoting the exchangeable field in the database.
+	FieldExchangeable = "exchangeable"
 	// FieldStartFrom holds the string denoting the start_from field in the database.
 	FieldStartFrom = "start_from"
 	// FieldDurationType holds the string denoting the duration_type field in the database.
 	FieldDurationType = "duration_type"
 	// FieldDuration holds the string denoting the duration field in the database.
 	FieldDuration = "duration"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldAutoNotify holds the string denoting the auto_notify field in the database.
+	FieldAutoNotify = "auto_notify"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
-	// FieldAutoNotify holds the string denoting the auto_notify field in the database.
-	FieldAutoNotify = "auto_notify"
+	// FieldDeletedAt holds the string denoting the deleted_at field in the database.
+	FieldDeletedAt = "deleted_at"
 	// EdgeHost holds the string denoting the host edge name in mutations.
 	EdgeHost = "host"
 	// Table holds the table name of the plan in the database.
@@ -55,13 +59,15 @@ var Columns = []string{
 	FieldName,
 	FieldDescription,
 	FieldPrice,
+	FieldCurrency,
+	FieldExchangeable,
 	FieldStartFrom,
 	FieldDurationType,
 	FieldDuration,
-	FieldStatus,
+	FieldAutoNotify,
 	FieldCreatedAt,
 	FieldUpdatedAt,
-	FieldAutoNotify,
+	FieldDeletedAt,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "plans"
@@ -86,6 +92,10 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultExchangeable holds the default value on creation for the "exchangeable" field.
+	DefaultExchangeable bool
+	// DefaultAutoNotify holds the default value on creation for the "auto_notify" field.
+	DefaultAutoNotify bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -120,32 +130,6 @@ func DurationTypeValidator(dt DurationType) error {
 	}
 }
 
-// AutoNotify defines the type for the "auto_notify" enum field.
-type AutoNotify string
-
-// AutoNotifyAutomatic is the default value of the AutoNotify enum.
-const DefaultAutoNotify = AutoNotifyAutomatic
-
-// AutoNotify values.
-const (
-	AutoNotifyAutomatic AutoNotify = "automatic"
-	AutoNotifyManual    AutoNotify = "manual"
-)
-
-func (an AutoNotify) String() string {
-	return string(an)
-}
-
-// AutoNotifyValidator is a validator for the "auto_notify" field enum values. It is called by the builders before save.
-func AutoNotifyValidator(an AutoNotify) error {
-	switch an {
-	case AutoNotifyAutomatic, AutoNotifyManual:
-		return nil
-	default:
-		return fmt.Errorf("plan: invalid enum value for auto_notify field: %q", an)
-	}
-}
-
 // OrderOption defines the ordering options for the Plan queries.
 type OrderOption func(*sql.Selector)
 
@@ -169,6 +153,16 @@ func ByPrice(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPrice, opts...).ToFunc()
 }
 
+// ByCurrency orders the results by the currency field.
+func ByCurrency(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCurrency, opts...).ToFunc()
+}
+
+// ByExchangeable orders the results by the exchangeable field.
+func ByExchangeable(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExchangeable, opts...).ToFunc()
+}
+
 // ByStartFrom orders the results by the start_from field.
 func ByStartFrom(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldStartFrom, opts...).ToFunc()
@@ -184,9 +178,9 @@ func ByDuration(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDuration, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByAutoNotify orders the results by the auto_notify field.
+func ByAutoNotify(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAutoNotify, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.
@@ -199,9 +193,9 @@ func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
 }
 
-// ByAutoNotify orders the results by the auto_notify field.
-func ByAutoNotify(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldAutoNotify, opts...).ToFunc()
+// ByDeletedAt orders the results by the deleted_at field.
+func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDeletedAt, opts...).ToFunc()
 }
 
 // ByHostField orders the results by host field.
