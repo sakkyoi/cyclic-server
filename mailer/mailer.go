@@ -36,6 +36,7 @@ func Start(ctx context.Context, wg *sync.WaitGroup) {
 			if err := SendEmail(ctx, message); err != nil {
 				scribe.Scribe.Error("failed to send email", zap.Error(err))
 
+				// TODO: this is a temporary solution, we need to implement retry mechanism
 				// if failed to send email, re-enqueue the message
 				if err := dispatcher.Enqueue(message); err != nil {
 					scribe.Scribe.Error("failed to re-enqueue email message", zap.Error(err))

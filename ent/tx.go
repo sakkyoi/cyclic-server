@@ -12,8 +12,6 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
-	// Link is the client for interacting with the Link builders.
-	Link *LinkClient
 	// Plan is the client for interacting with the Plan builders.
 	Plan *PlanClient
 	// Subscribe is the client for interacting with the Subscribe builders.
@@ -151,7 +149,6 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
-	tx.Link = NewLinkClient(tx.config)
 	tx.Plan = NewPlanClient(tx.config)
 	tx.Subscribe = NewSubscribeClient(tx.config)
 	tx.User = NewUserClient(tx.config)
@@ -164,7 +161,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Link.QueryXXX(), the query will be executed
+// applies a query, for example: Plan.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

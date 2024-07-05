@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"cyclic/ent/link"
 	"cyclic/ent/plan"
 	"cyclic/ent/subscribe"
 	"cyclic/ent/user"
@@ -111,21 +110,6 @@ func (uc *UserCreate) SetNillableID(u *uuid.UUID) *UserCreate {
 		uc.SetID(*u)
 	}
 	return uc
-}
-
-// AddLinkIDs adds the "links" edge to the Link entity by IDs.
-func (uc *UserCreate) AddLinkIDs(ids ...uuid.UUID) *UserCreate {
-	uc.mutation.AddLinkIDs(ids...)
-	return uc
-}
-
-// AddLinks adds the "links" edges to the Link entity.
-func (uc *UserCreate) AddLinks(l ...*Link) *UserCreate {
-	ids := make([]uuid.UUID, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
-	}
-	return uc.AddLinkIDs(ids...)
 }
 
 // AddPlanIDs adds the "plans" edge to the Plan entity by IDs.
@@ -286,22 +270,6 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldActive, field.TypeBool, value)
 		_node.Active = value
 	}
-	if nodes := uc.mutation.LinksIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.LinksTable,
-			Columns: []string{user.LinksColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := uc.mutation.PlansIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -320,10 +288,10 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	}
 	if nodes := uc.mutation.SubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
 			Table:   user.SubscriptionsTable,
-			Columns: user.SubscriptionsPrimaryKey,
+			Columns: []string{user.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),

@@ -74,6 +74,13 @@ func build() *gin.Engine {
 		apiGroup.PUT("/plan/:id", jwt.JWT(), a.Plan.Update)
 		apiGroup.DELETE("/plan/:id", jwt.JWT(), a.Plan.Remove)
 		apiGroup.GET("/plan", jwt.JWT(), a.Plan.List)
+		apiGroup.POST("/plan/:id/invite", jwt.JWT(), a.Plan.Invite) // invite user to subscription
+		// TODO: list subscribers
+
+		// subscription
+		// TODO: list subscription (for user)
+		// TODO: subscribe (if user is invited)
+		// TODO: leave subscription (must not be the owner)
 	}
 
 	return r

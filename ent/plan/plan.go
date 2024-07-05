@@ -42,6 +42,8 @@ const (
 	FieldDeletedAt = "deleted_at"
 	// EdgeHost holds the string denoting the host edge name in mutations.
 	EdgeHost = "host"
+	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
+	EdgeSubscriptions = "subscriptions"
 	// Table holds the table name of the plan in the database.
 	Table = "plans"
 	// HostTable is the table that holds the host relation/edge.
@@ -51,6 +53,13 @@ const (
 	HostInverseTable = "users"
 	// HostColumn is the table column denoting the host relation/edge.
 	HostColumn = "user_plans"
+	// SubscriptionsTable is the table that holds the subscriptions relation/edge.
+	SubscriptionsTable = "subscribes"
+	// SubscriptionsInverseTable is the table name for the Subscribe entity.
+	// It exists in this package in order to avoid circular dependency with the "subscribe" package.
+	SubscriptionsInverseTable = "subscribes"
+	// SubscriptionsColumn is the table column denoting the subscriptions relation/edge.
+	SubscriptionsColumn = "plan_subscriptions"
 )
 
 // Columns holds all SQL columns for plan fields.
@@ -204,10 +213,31 @@ func ByHostField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newHostStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// BySubscriptionsCount orders the results by subscriptions count.
+func BySubscriptionsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSubscriptionsStep(), opts...)
+	}
+}
+
+// BySubscriptions orders the results by subscriptions terms.
+func BySubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newHostStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(HostInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, HostTable, HostColumn),
+	)
+}
+func newSubscriptionsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SubscriptionsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionsTable, SubscriptionsColumn),
 	)
 }

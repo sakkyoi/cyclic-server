@@ -6,9 +6,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
-// Link is the predicate function for link builders.
-type Link func(*sql.Selector)
-
 // Plan is the predicate function for plan builders.
 type Plan func(*sql.Selector)
 

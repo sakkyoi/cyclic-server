@@ -3,7 +3,6 @@
 package ent
 
 import (
-	"cyclic/ent/link"
 	"cyclic/ent/plan"
 	"cyclic/ent/schema"
 	"cyclic/ent/subscribe"
@@ -17,12 +16,6 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
-	linkFields := schema.Link{}.Fields()
-	_ = linkFields
-	// linkDescID is the schema descriptor for id field.
-	linkDescID := linkFields[0].Descriptor()
-	// link.DefaultID holds the default value on creation for the id field.
-	link.DefaultID = linkDescID.Default.(func() uuid.UUID)
 	planFields := schema.Plan{}.Fields()
 	_ = planFields
 	// planDescExchangeable is the schema descriptor for exchangeable field.
@@ -49,10 +42,6 @@ func init() {
 	plan.DefaultID = planDescID.Default.(func() uuid.UUID)
 	subscribeFields := schema.Subscribe{}.Fields()
 	_ = subscribeFields
-	// subscribeDescSubscribedAt is the schema descriptor for subscribed_at field.
-	subscribeDescSubscribedAt := subscribeFields[1].Descriptor()
-	// subscribe.DefaultSubscribedAt holds the default value on creation for the subscribed_at field.
-	subscribe.DefaultSubscribedAt = subscribeDescSubscribedAt.Default.(func() time.Time)
 	// subscribeDescID is the schema descriptor for id field.
 	subscribeDescID := subscribeFields[0].Descriptor()
 	// subscribe.DefaultID holds the default value on creation for the id field.

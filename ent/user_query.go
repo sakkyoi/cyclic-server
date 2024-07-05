@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"cyclic/ent/link"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
 	"cyclic/ent/subscribe"
@@ -26,7 +25,6 @@ type UserQuery struct {
 	order             []user.OrderOption
 	inters            []Interceptor
 	predicates        []predicate.User
-	withLinks         *LinkQuery
 	withPlans         *PlanQuery
 	withSubscriptions *SubscribeQuery
 	// intermediate query (i.e. traversal path).
@@ -65,28 +63,6 @@ func (uq *UserQuery) Order(o ...user.OrderOption) *UserQuery {
 	return uq
 }
 
-// QueryLinks chains the current query on the "links" edge.
-func (uq *UserQuery) QueryLinks() *LinkQuery {
-	query := (&LinkClient{config: uq.config}).Query()
-	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
-		if err := uq.prepareQuery(ctx); err != nil {
-			return nil, err
-		}
-		selector := uq.sqlQuery(ctx)
-		if err := selector.Err(); err != nil {
-			return nil, err
-		}
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, selector),
-			sqlgraph.To(link.Table, link.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.LinksTable, user.LinksColumn),
-		)
-		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
-		return fromU, nil
-	}
-	return query
-}
-
 // QueryPlans chains the current query on the "plans" edge.
 func (uq *UserQuery) QueryPlans() *PlanQuery {
 	query := (&PlanClient{config: uq.config}).Query()
@@ -123,7 +99,7 @@ func (uq *UserQuery) QuerySubscriptions() *SubscribeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(subscribe.Table, subscribe.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, user.SubscriptionsTable, user.SubscriptionsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SubscriptionsTable, user.SubscriptionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -323,24 +299,12 @@ func (uq *UserQuery) Clone() *UserQuery {
 		order:             append([]user.OrderOption{}, uq.order...),
 		inters:            append([]Interceptor{}, uq.inters...),
 		predicates:        append([]predicate.User{}, uq.predicates...),
-		withLinks:         uq.withLinks.Clone(),
 		withPlans:         uq.withPlans.Clone(),
 		withSubscriptions: uq.withSubscriptions.Clone(),
 		// clone intermediate query.
 		sql:  uq.sql.Clone(),
 		path: uq.path,
 	}
-}
-
-// WithLinks tells the query-builder to eager-load the nodes that are connected to
-// the "links" edge. The optional arguments are used to configure the query builder of the edge.
-func (uq *UserQuery) WithLinks(opts ...func(*LinkQuery)) *UserQuery {
-	query := (&LinkClient{config: uq.config}).Query()
-	for _, opt := range opts {
-		opt(query)
-	}
-	uq.withLinks = query
-	return uq
 }
 
 // WithPlans tells the query-builder to eager-load the nodes that are connected to
@@ -443,8 +407,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [3]bool{
-			uq.withLinks != nil,
+		loadedTypes = [2]bool{
 			uq.withPlans != nil,
 			uq.withSubscriptions != nil,
 		}
@@ -467,13 +430,6 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
-	if query := uq.withLinks; query != nil {
-		if err := uq.loadLinks(ctx, query, nodes,
-			func(n *User) { n.Edges.Links = []*Link{} },
-			func(n *User, e *Link) { n.Edges.Links = append(n.Edges.Links, e) }); err != nil {
-			return nil, err
-		}
-	}
 	if query := uq.withPlans; query != nil {
 		if err := uq.loadPlans(ctx, query, nodes,
 			func(n *User) { n.Edges.Plans = []*Plan{} },
@@ -491,37 +447,6 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	return nodes, nil
 }
 
-func (uq *UserQuery) loadLinks(ctx context.Context, query *LinkQuery, nodes []*User, init func(*User), assign func(*User, *Link)) error {
-	fks := make([]driver.Value, 0, len(nodes))
-	nodeids := make(map[uuid.UUID]*User)
-	for i := range nodes {
-		fks = append(fks, nodes[i].ID)
-		nodeids[nodes[i].ID] = nodes[i]
-		if init != nil {
-			init(nodes[i])
-		}
-	}
-	query.withFKs = true
-	query.Where(predicate.Link(func(s *sql.Selector) {
-		s.Where(sql.InValues(s.C(user.LinksColumn), fks...))
-	}))
-	neighbors, err := query.All(ctx)
-	if err != nil {
-		return err
-	}
-	for _, n := range neighbors {
-		fk := n.user_links
-		if fk == nil {
-			return fmt.Errorf(`foreign-key "user_links" is nil for node %v`, n.ID)
-		}
-		node, ok := nodeids[*fk]
-		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "user_links" returned %v for node %v`, *fk, n.ID)
-		}
-		assign(node, n)
-	}
-	return nil
-}
 func (uq *UserQuery) loadPlans(ctx context.Context, query *PlanQuery, nodes []*User, init func(*User), assign func(*User, *Plan)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*User)
@@ -554,63 +479,33 @@ func (uq *UserQuery) loadPlans(ctx context.Context, query *PlanQuery, nodes []*U
 	return nil
 }
 func (uq *UserQuery) loadSubscriptions(ctx context.Context, query *SubscribeQuery, nodes []*User, init func(*User), assign func(*User, *Subscribe)) error {
-	edgeIDs := make([]driver.Value, len(nodes))
-	byID := make(map[uuid.UUID]*User)
-	nids := make(map[uuid.UUID]map[*User]struct{})
-	for i, node := range nodes {
-		edgeIDs[i] = node.ID
-		byID[node.ID] = node
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
 		if init != nil {
-			init(node)
+			init(nodes[i])
 		}
 	}
-	query.Where(func(s *sql.Selector) {
-		joinT := sql.Table(user.SubscriptionsTable)
-		s.Join(joinT).On(s.C(subscribe.FieldID), joinT.C(user.SubscriptionsPrimaryKey[0]))
-		s.Where(sql.InValues(joinT.C(user.SubscriptionsPrimaryKey[1]), edgeIDs...))
-		columns := s.SelectedColumns()
-		s.Select(joinT.C(user.SubscriptionsPrimaryKey[1]))
-		s.AppendSelect(columns...)
-		s.SetDistinct(false)
-	})
-	if err := query.prepareQuery(ctx); err != nil {
-		return err
-	}
-	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
-		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
-			assign := spec.Assign
-			values := spec.ScanValues
-			spec.ScanValues = func(columns []string) ([]any, error) {
-				values, err := values(columns[1:])
-				if err != nil {
-					return nil, err
-				}
-				return append([]any{new(uuid.UUID)}, values...), nil
-			}
-			spec.Assign = func(columns []string, values []any) error {
-				outValue := *values[0].(*uuid.UUID)
-				inValue := *values[1].(*uuid.UUID)
-				if nids[inValue] == nil {
-					nids[inValue] = map[*User]struct{}{byID[outValue]: {}}
-					return assign(columns[1:], values[1:])
-				}
-				nids[inValue][byID[outValue]] = struct{}{}
-				return nil
-			}
-		})
-	})
-	neighbors, err := withInterceptors[[]*Subscribe](ctx, query, qr, query.inters)
+	query.withFKs = true
+	query.Where(predicate.Subscribe(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.SubscriptionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, n := range neighbors {
-		nodes, ok := nids[n.ID]
+		fk := n.user_subscriptions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_subscriptions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected "subscriptions" node returned %v`, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_subscriptions" returned %v for node %v`, *fk, n.ID)
 		}
-		for kn := range nodes {
-			assign(kn, n)
-		}
+		assign(node, n)
 	}
 	return nil
 }

@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"cyclic/ent/link"
 	"cyclic/ent/plan"
 	"cyclic/ent/subscribe"
 	"cyclic/ent/user"
@@ -76,7 +75,6 @@ var (
 func checkColumn(table, column string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			link.Table:      link.ValidColumn,
 			plan.Table:      plan.ValidColumn,
 			subscribe.Table: subscribe.ValidColumn,
 			user.Table:      user.ValidColumn,

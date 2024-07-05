@@ -3,7 +3,9 @@
 package ent
 
 import (
+	"cyclic/ent/plan"
 	"cyclic/ent/subscribe"
+	"cyclic/ent/user"
 	"fmt"
 	"strings"
 	"time"
@@ -24,26 +26,43 @@ type Subscribe struct {
 	LeftAt time.Time `json:"left_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the SubscribeQuery when eager-loading is set.
-	Edges        SubscribeEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges              SubscribeEdges `json:"edges"`
+	plan_subscriptions *uuid.UUID
+	user_subscriptions *uuid.UUID
+	selectValues       sql.SelectValues
 }
 
 // SubscribeEdges holds the relations/edges for other nodes in the graph.
 type SubscribeEdges struct {
-	// Users holds the value of the users edge.
-	Users []*User `json:"users,omitempty"`
+	// User holds the value of the user edge.
+	User *User `json:"user,omitempty"`
+	// Plan holds the value of the plan edge.
+	Plan *Plan `json:"plan,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
-// UsersOrErr returns the Users value or an error if the edge
-// was not loaded in eager-loading.
-func (e SubscribeEdges) UsersOrErr() ([]*User, error) {
-	if e.loadedTypes[0] {
-		return e.Users, nil
+// UserOrErr returns the User value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e SubscribeEdges) UserOrErr() (*User, error) {
+	if e.User != nil {
+		return e.User, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: user.Label}
 	}
-	return nil, &NotLoadedError{edge: "users"}
+	return nil, &NotLoadedError{edge: "user"}
+}
+
+// PlanOrErr returns the Plan value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e SubscribeEdges) PlanOrErr() (*Plan, error) {
+	if e.Plan != nil {
+		return e.Plan, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: plan.Label}
+	}
+	return nil, &NotLoadedError{edge: "plan"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -55,6 +74,10 @@ func (*Subscribe) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullTime)
 		case subscribe.FieldID:
 			values[i] = new(uuid.UUID)
+		case subscribe.ForeignKeys[0]: // plan_subscriptions
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case subscribe.ForeignKeys[1]: // user_subscriptions
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -88,6 +111,20 @@ func (s *Subscribe) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				s.LeftAt = value.Time
 			}
+		case subscribe.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field plan_subscriptions", values[i])
+			} else if value.Valid {
+				s.plan_subscriptions = new(uuid.UUID)
+				*s.plan_subscriptions = *value.S.(*uuid.UUID)
+			}
+		case subscribe.ForeignKeys[1]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field user_subscriptions", values[i])
+			} else if value.Valid {
+				s.user_subscriptions = new(uuid.UUID)
+				*s.user_subscriptions = *value.S.(*uuid.UUID)
+			}
 		default:
 			s.selectValues.Set(columns[i], values[i])
 		}
@@ -101,9 +138,14 @@ func (s *Subscribe) Value(name string) (ent.Value, error) {
 	return s.selectValues.Get(name)
 }
 
-// QueryUsers queries the "users" edge of the Subscribe entity.
-func (s *Subscribe) QueryUsers() *UserQuery {
-	return NewSubscribeClient(s.config).QueryUsers(s)
+// QueryUser queries the "user" edge of the Subscribe entity.
+func (s *Subscribe) QueryUser() *UserQuery {
+	return NewSubscribeClient(s.config).QueryUser(s)
+}
+
+// QueryPlan queries the "plan" edge of the Subscribe entity.
+func (s *Subscribe) QueryPlan() *PlanQuery {
+	return NewSubscribeClient(s.config).QueryPlan(s)
 }
 
 // Update returns a builder for updating this Subscribe.

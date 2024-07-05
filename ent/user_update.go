@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"cyclic/ent/link"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
 	"cyclic/ent/subscribe"
@@ -125,21 +124,6 @@ func (uu *UserUpdate) SetNillableActive(b *bool) *UserUpdate {
 	return uu
 }
 
-// AddLinkIDs adds the "links" edge to the Link entity by IDs.
-func (uu *UserUpdate) AddLinkIDs(ids ...uuid.UUID) *UserUpdate {
-	uu.mutation.AddLinkIDs(ids...)
-	return uu
-}
-
-// AddLinks adds the "links" edges to the Link entity.
-func (uu *UserUpdate) AddLinks(l ...*Link) *UserUpdate {
-	ids := make([]uuid.UUID, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
-	}
-	return uu.AddLinkIDs(ids...)
-}
-
 // AddPlanIDs adds the "plans" edge to the Plan entity by IDs.
 func (uu *UserUpdate) AddPlanIDs(ids ...uuid.UUID) *UserUpdate {
 	uu.mutation.AddPlanIDs(ids...)
@@ -173,27 +157,6 @@ func (uu *UserUpdate) AddSubscriptions(s ...*Subscribe) *UserUpdate {
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
-}
-
-// ClearLinks clears all "links" edges to the Link entity.
-func (uu *UserUpdate) ClearLinks() *UserUpdate {
-	uu.mutation.ClearLinks()
-	return uu
-}
-
-// RemoveLinkIDs removes the "links" edge to Link entities by IDs.
-func (uu *UserUpdate) RemoveLinkIDs(ids ...uuid.UUID) *UserUpdate {
-	uu.mutation.RemoveLinkIDs(ids...)
-	return uu
-}
-
-// RemoveLinks removes "links" edges to Link entities.
-func (uu *UserUpdate) RemoveLinks(l ...*Link) *UserUpdate {
-	ids := make([]uuid.UUID, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
-	}
-	return uu.RemoveLinkIDs(ids...)
 }
 
 // ClearPlans clears all "plans" edges to the Plan entity.
@@ -314,51 +277,6 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.Active(); ok {
 		_spec.SetField(user.FieldActive, field.TypeBool, value)
 	}
-	if uu.mutation.LinksCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.LinksTable,
-			Columns: []string{user.LinksColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.RemovedLinksIDs(); len(nodes) > 0 && !uu.mutation.LinksCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.LinksTable,
-			Columns: []string{user.LinksColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uu.mutation.LinksIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.LinksTable,
-			Columns: []string{user.LinksColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if uu.mutation.PlansCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -406,10 +324,10 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if uu.mutation.SubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
 			Table:   user.SubscriptionsTable,
-			Columns: user.SubscriptionsPrimaryKey,
+			Columns: []string{user.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
@@ -419,10 +337,10 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := uu.mutation.RemovedSubscriptionsIDs(); len(nodes) > 0 && !uu.mutation.SubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
 			Table:   user.SubscriptionsTable,
-			Columns: user.SubscriptionsPrimaryKey,
+			Columns: []string{user.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
@@ -435,10 +353,10 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if nodes := uu.mutation.SubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
 			Table:   user.SubscriptionsTable,
-			Columns: user.SubscriptionsPrimaryKey,
+			Columns: []string{user.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
@@ -563,21 +481,6 @@ func (uuo *UserUpdateOne) SetNillableActive(b *bool) *UserUpdateOne {
 	return uuo
 }
 
-// AddLinkIDs adds the "links" edge to the Link entity by IDs.
-func (uuo *UserUpdateOne) AddLinkIDs(ids ...uuid.UUID) *UserUpdateOne {
-	uuo.mutation.AddLinkIDs(ids...)
-	return uuo
-}
-
-// AddLinks adds the "links" edges to the Link entity.
-func (uuo *UserUpdateOne) AddLinks(l ...*Link) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
-	}
-	return uuo.AddLinkIDs(ids...)
-}
-
 // AddPlanIDs adds the "plans" edge to the Plan entity by IDs.
 func (uuo *UserUpdateOne) AddPlanIDs(ids ...uuid.UUID) *UserUpdateOne {
 	uuo.mutation.AddPlanIDs(ids...)
@@ -611,27 +514,6 @@ func (uuo *UserUpdateOne) AddSubscriptions(s ...*Subscribe) *UserUpdateOne {
 // Mutation returns the UserMutation object of the builder.
 func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
-}
-
-// ClearLinks clears all "links" edges to the Link entity.
-func (uuo *UserUpdateOne) ClearLinks() *UserUpdateOne {
-	uuo.mutation.ClearLinks()
-	return uuo
-}
-
-// RemoveLinkIDs removes the "links" edge to Link entities by IDs.
-func (uuo *UserUpdateOne) RemoveLinkIDs(ids ...uuid.UUID) *UserUpdateOne {
-	uuo.mutation.RemoveLinkIDs(ids...)
-	return uuo
-}
-
-// RemoveLinks removes "links" edges to Link entities.
-func (uuo *UserUpdateOne) RemoveLinks(l ...*Link) *UserUpdateOne {
-	ids := make([]uuid.UUID, len(l))
-	for i := range l {
-		ids[i] = l[i].ID
-	}
-	return uuo.RemoveLinkIDs(ids...)
 }
 
 // ClearPlans clears all "plans" edges to the Plan entity.
@@ -782,51 +664,6 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	if value, ok := uuo.mutation.Active(); ok {
 		_spec.SetField(user.FieldActive, field.TypeBool, value)
 	}
-	if uuo.mutation.LinksCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.LinksTable,
-			Columns: []string{user.LinksColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.RemovedLinksIDs(); len(nodes) > 0 && !uuo.mutation.LinksCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.LinksTable,
-			Columns: []string{user.LinksColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := uuo.mutation.LinksIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   user.LinksTable,
-			Columns: []string{user.LinksColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(link.FieldID, field.TypeUUID),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
 	if uuo.mutation.PlansCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -874,10 +711,10 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if uuo.mutation.SubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
 			Table:   user.SubscriptionsTable,
-			Columns: user.SubscriptionsPrimaryKey,
+			Columns: []string{user.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
@@ -887,10 +724,10 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if nodes := uuo.mutation.RemovedSubscriptionsIDs(); len(nodes) > 0 && !uuo.mutation.SubscriptionsCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
 			Table:   user.SubscriptionsTable,
-			Columns: user.SubscriptionsPrimaryKey,
+			Columns: []string{user.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
@@ -903,10 +740,10 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if nodes := uuo.mutation.SubscriptionsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: true,
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
 			Table:   user.SubscriptionsTable,
-			Columns: user.SubscriptionsPrimaryKey,
+			Columns: []string{user.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),

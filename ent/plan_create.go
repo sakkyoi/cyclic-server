@@ -5,6 +5,7 @@ package ent
 import (
 	"context"
 	"cyclic/ent/plan"
+	"cyclic/ent/subscribe"
 	"cyclic/ent/user"
 	"errors"
 	"fmt"
@@ -165,6 +166,21 @@ func (pc *PlanCreate) SetHostID(id uuid.UUID) *PlanCreate {
 // SetHost sets the "host" edge to the User entity.
 func (pc *PlanCreate) SetHost(u *User) *PlanCreate {
 	return pc.SetHostID(u.ID)
+}
+
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscribe entity by IDs.
+func (pc *PlanCreate) AddSubscriptionIDs(ids ...uuid.UUID) *PlanCreate {
+	pc.mutation.AddSubscriptionIDs(ids...)
+	return pc
+}
+
+// AddSubscriptions adds the "subscriptions" edges to the Subscribe entity.
+func (pc *PlanCreate) AddSubscriptions(s ...*Subscribe) *PlanCreate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return pc.AddSubscriptionIDs(ids...)
 }
 
 // Mutation returns the PlanMutation object of the builder.
@@ -362,6 +378,22 @@ func (pc *PlanCreate) createSpec() (*Plan, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.user_plans = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := pc.mutation.SubscriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   plan.SubscriptionsTable,
+			Columns: []string{plan.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
 	"cyclic/ent/subscribe"
 	"cyclic/ent/user"
@@ -44,6 +45,12 @@ func (su *SubscribeUpdate) SetNillableSubscribedAt(t *time.Time) *SubscribeUpdat
 	return su
 }
 
+// ClearSubscribedAt clears the value of the "subscribed_at" field.
+func (su *SubscribeUpdate) ClearSubscribedAt() *SubscribeUpdate {
+	su.mutation.ClearSubscribedAt()
+	return su
+}
+
 // SetLeftAt sets the "left_at" field.
 func (su *SubscribeUpdate) SetLeftAt(t time.Time) *SubscribeUpdate {
 	su.mutation.SetLeftAt(t)
@@ -64,19 +71,26 @@ func (su *SubscribeUpdate) ClearLeftAt() *SubscribeUpdate {
 	return su
 }
 
-// AddUserIDs adds the "users" edge to the User entity by IDs.
-func (su *SubscribeUpdate) AddUserIDs(ids ...uuid.UUID) *SubscribeUpdate {
-	su.mutation.AddUserIDs(ids...)
+// SetUserID sets the "user" edge to the User entity by ID.
+func (su *SubscribeUpdate) SetUserID(id uuid.UUID) *SubscribeUpdate {
+	su.mutation.SetUserID(id)
 	return su
 }
 
-// AddUsers adds the "users" edges to the User entity.
-func (su *SubscribeUpdate) AddUsers(u ...*User) *SubscribeUpdate {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return su.AddUserIDs(ids...)
+// SetUser sets the "user" edge to the User entity.
+func (su *SubscribeUpdate) SetUser(u *User) *SubscribeUpdate {
+	return su.SetUserID(u.ID)
+}
+
+// SetPlanID sets the "plan" edge to the Plan entity by ID.
+func (su *SubscribeUpdate) SetPlanID(id uuid.UUID) *SubscribeUpdate {
+	su.mutation.SetPlanID(id)
+	return su
+}
+
+// SetPlan sets the "plan" edge to the Plan entity.
+func (su *SubscribeUpdate) SetPlan(p *Plan) *SubscribeUpdate {
+	return su.SetPlanID(p.ID)
 }
 
 // Mutation returns the SubscribeMutation object of the builder.
@@ -84,25 +98,16 @@ func (su *SubscribeUpdate) Mutation() *SubscribeMutation {
 	return su.mutation
 }
 
-// ClearUsers clears all "users" edges to the User entity.
-func (su *SubscribeUpdate) ClearUsers() *SubscribeUpdate {
-	su.mutation.ClearUsers()
+// ClearUser clears the "user" edge to the User entity.
+func (su *SubscribeUpdate) ClearUser() *SubscribeUpdate {
+	su.mutation.ClearUser()
 	return su
 }
 
-// RemoveUserIDs removes the "users" edge to User entities by IDs.
-func (su *SubscribeUpdate) RemoveUserIDs(ids ...uuid.UUID) *SubscribeUpdate {
-	su.mutation.RemoveUserIDs(ids...)
+// ClearPlan clears the "plan" edge to the Plan entity.
+func (su *SubscribeUpdate) ClearPlan() *SubscribeUpdate {
+	su.mutation.ClearPlan()
 	return su
-}
-
-// RemoveUsers removes "users" edges to User entities.
-func (su *SubscribeUpdate) RemoveUsers(u ...*User) *SubscribeUpdate {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return su.RemoveUserIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -132,7 +137,21 @@ func (su *SubscribeUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (su *SubscribeUpdate) check() error {
+	if _, ok := su.mutation.UserID(); su.mutation.UserCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Subscribe.user"`)
+	}
+	if _, ok := su.mutation.PlanID(); su.mutation.PlanCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Subscribe.plan"`)
+	}
+	return nil
+}
+
 func (su *SubscribeUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := su.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(subscribe.Table, subscribe.Columns, sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID))
 	if ps := su.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -144,18 +163,21 @@ func (su *SubscribeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := su.mutation.SubscribedAt(); ok {
 		_spec.SetField(subscribe.FieldSubscribedAt, field.TypeTime, value)
 	}
+	if su.mutation.SubscribedAtCleared() {
+		_spec.ClearField(subscribe.FieldSubscribedAt, field.TypeTime)
+	}
 	if value, ok := su.mutation.LeftAt(); ok {
 		_spec.SetField(subscribe.FieldLeftAt, field.TypeTime, value)
 	}
 	if su.mutation.LeftAtCleared() {
 		_spec.ClearField(subscribe.FieldLeftAt, field.TypeTime)
 	}
-	if su.mutation.UsersCleared() {
+	if su.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   subscribe.UsersTable,
-			Columns: subscribe.UsersPrimaryKey,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   subscribe.UserTable,
+			Columns: []string{subscribe.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
@@ -163,12 +185,12 @@ func (su *SubscribeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := su.mutation.RemovedUsersIDs(); len(nodes) > 0 && !su.mutation.UsersCleared() {
+	if nodes := su.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   subscribe.UsersTable,
-			Columns: subscribe.UsersPrimaryKey,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   subscribe.UserTable,
+			Columns: []string{subscribe.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
@@ -177,17 +199,30 @@ func (su *SubscribeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := su.mutation.UsersIDs(); len(nodes) > 0 {
+	if su.mutation.PlanCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   subscribe.UsersTable,
-			Columns: subscribe.UsersPrimaryKey,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   subscribe.PlanTable,
+			Columns: []string{subscribe.PlanColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(plan.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.PlanIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   subscribe.PlanTable,
+			Columns: []string{subscribe.PlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(plan.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -229,6 +264,12 @@ func (suo *SubscribeUpdateOne) SetNillableSubscribedAt(t *time.Time) *SubscribeU
 	return suo
 }
 
+// ClearSubscribedAt clears the value of the "subscribed_at" field.
+func (suo *SubscribeUpdateOne) ClearSubscribedAt() *SubscribeUpdateOne {
+	suo.mutation.ClearSubscribedAt()
+	return suo
+}
+
 // SetLeftAt sets the "left_at" field.
 func (suo *SubscribeUpdateOne) SetLeftAt(t time.Time) *SubscribeUpdateOne {
 	suo.mutation.SetLeftAt(t)
@@ -249,19 +290,26 @@ func (suo *SubscribeUpdateOne) ClearLeftAt() *SubscribeUpdateOne {
 	return suo
 }
 
-// AddUserIDs adds the "users" edge to the User entity by IDs.
-func (suo *SubscribeUpdateOne) AddUserIDs(ids ...uuid.UUID) *SubscribeUpdateOne {
-	suo.mutation.AddUserIDs(ids...)
+// SetUserID sets the "user" edge to the User entity by ID.
+func (suo *SubscribeUpdateOne) SetUserID(id uuid.UUID) *SubscribeUpdateOne {
+	suo.mutation.SetUserID(id)
 	return suo
 }
 
-// AddUsers adds the "users" edges to the User entity.
-func (suo *SubscribeUpdateOne) AddUsers(u ...*User) *SubscribeUpdateOne {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return suo.AddUserIDs(ids...)
+// SetUser sets the "user" edge to the User entity.
+func (suo *SubscribeUpdateOne) SetUser(u *User) *SubscribeUpdateOne {
+	return suo.SetUserID(u.ID)
+}
+
+// SetPlanID sets the "plan" edge to the Plan entity by ID.
+func (suo *SubscribeUpdateOne) SetPlanID(id uuid.UUID) *SubscribeUpdateOne {
+	suo.mutation.SetPlanID(id)
+	return suo
+}
+
+// SetPlan sets the "plan" edge to the Plan entity.
+func (suo *SubscribeUpdateOne) SetPlan(p *Plan) *SubscribeUpdateOne {
+	return suo.SetPlanID(p.ID)
 }
 
 // Mutation returns the SubscribeMutation object of the builder.
@@ -269,25 +317,16 @@ func (suo *SubscribeUpdateOne) Mutation() *SubscribeMutation {
 	return suo.mutation
 }
 
-// ClearUsers clears all "users" edges to the User entity.
-func (suo *SubscribeUpdateOne) ClearUsers() *SubscribeUpdateOne {
-	suo.mutation.ClearUsers()
+// ClearUser clears the "user" edge to the User entity.
+func (suo *SubscribeUpdateOne) ClearUser() *SubscribeUpdateOne {
+	suo.mutation.ClearUser()
 	return suo
 }
 
-// RemoveUserIDs removes the "users" edge to User entities by IDs.
-func (suo *SubscribeUpdateOne) RemoveUserIDs(ids ...uuid.UUID) *SubscribeUpdateOne {
-	suo.mutation.RemoveUserIDs(ids...)
+// ClearPlan clears the "plan" edge to the Plan entity.
+func (suo *SubscribeUpdateOne) ClearPlan() *SubscribeUpdateOne {
+	suo.mutation.ClearPlan()
 	return suo
-}
-
-// RemoveUsers removes "users" edges to User entities.
-func (suo *SubscribeUpdateOne) RemoveUsers(u ...*User) *SubscribeUpdateOne {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return suo.RemoveUserIDs(ids...)
 }
 
 // Where appends a list predicates to the SubscribeUpdate builder.
@@ -330,7 +369,21 @@ func (suo *SubscribeUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (suo *SubscribeUpdateOne) check() error {
+	if _, ok := suo.mutation.UserID(); suo.mutation.UserCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Subscribe.user"`)
+	}
+	if _, ok := suo.mutation.PlanID(); suo.mutation.PlanCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Subscribe.plan"`)
+	}
+	return nil
+}
+
 func (suo *SubscribeUpdateOne) sqlSave(ctx context.Context) (_node *Subscribe, err error) {
+	if err := suo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(subscribe.Table, subscribe.Columns, sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID))
 	id, ok := suo.mutation.ID()
 	if !ok {
@@ -359,18 +412,21 @@ func (suo *SubscribeUpdateOne) sqlSave(ctx context.Context) (_node *Subscribe, e
 	if value, ok := suo.mutation.SubscribedAt(); ok {
 		_spec.SetField(subscribe.FieldSubscribedAt, field.TypeTime, value)
 	}
+	if suo.mutation.SubscribedAtCleared() {
+		_spec.ClearField(subscribe.FieldSubscribedAt, field.TypeTime)
+	}
 	if value, ok := suo.mutation.LeftAt(); ok {
 		_spec.SetField(subscribe.FieldLeftAt, field.TypeTime, value)
 	}
 	if suo.mutation.LeftAtCleared() {
 		_spec.ClearField(subscribe.FieldLeftAt, field.TypeTime)
 	}
-	if suo.mutation.UsersCleared() {
+	if suo.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   subscribe.UsersTable,
-			Columns: subscribe.UsersPrimaryKey,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   subscribe.UserTable,
+			Columns: []string{subscribe.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
@@ -378,12 +434,12 @@ func (suo *SubscribeUpdateOne) sqlSave(ctx context.Context) (_node *Subscribe, e
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := suo.mutation.RemovedUsersIDs(); len(nodes) > 0 && !suo.mutation.UsersCleared() {
+	if nodes := suo.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   subscribe.UsersTable,
-			Columns: subscribe.UsersPrimaryKey,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   subscribe.UserTable,
+			Columns: []string{subscribe.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
@@ -392,17 +448,30 @@ func (suo *SubscribeUpdateOne) sqlSave(ctx context.Context) (_node *Subscribe, e
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
-	if nodes := suo.mutation.UsersIDs(); len(nodes) > 0 {
+	if suo.mutation.PlanCleared() {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   subscribe.UsersTable,
-			Columns: subscribe.UsersPrimaryKey,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   subscribe.PlanTable,
+			Columns: []string{subscribe.PlanColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(plan.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.PlanIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   subscribe.PlanTable,
+			Columns: []string{subscribe.PlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(plan.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

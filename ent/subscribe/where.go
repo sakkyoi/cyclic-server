@@ -106,6 +106,16 @@ func SubscribedAtLTE(v time.Time) predicate.Subscribe {
 	return predicate.Subscribe(sql.FieldLTE(FieldSubscribedAt, v))
 }
 
+// SubscribedAtIsNil applies the IsNil predicate on the "subscribed_at" field.
+func SubscribedAtIsNil() predicate.Subscribe {
+	return predicate.Subscribe(sql.FieldIsNull(FieldSubscribedAt))
+}
+
+// SubscribedAtNotNil applies the NotNil predicate on the "subscribed_at" field.
+func SubscribedAtNotNil() predicate.Subscribe {
+	return predicate.Subscribe(sql.FieldNotNull(FieldSubscribedAt))
+}
+
 // LeftAtEQ applies the EQ predicate on the "left_at" field.
 func LeftAtEQ(v time.Time) predicate.Subscribe {
 	return predicate.Subscribe(sql.FieldEQ(FieldLeftAt, v))
@@ -156,21 +166,44 @@ func LeftAtNotNil() predicate.Subscribe {
 	return predicate.Subscribe(sql.FieldNotNull(FieldLeftAt))
 }
 
-// HasUsers applies the HasEdge predicate on the "users" edge.
-func HasUsers() predicate.Subscribe {
+// HasUser applies the HasEdge predicate on the "user" edge.
+func HasUser() predicate.Subscribe {
 	return predicate.Subscribe(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, UsersTable, UsersPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasUsersWith applies the HasEdge predicate on the "users" edge with a given conditions (other predicates).
-func HasUsersWith(preds ...predicate.User) predicate.Subscribe {
+// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
+func HasUserWith(preds ...predicate.User) predicate.Subscribe {
 	return predicate.Subscribe(func(s *sql.Selector) {
-		step := newUsersStep()
+		step := newUserStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPlan applies the HasEdge predicate on the "plan" edge.
+func HasPlan() predicate.Subscribe {
+	return predicate.Subscribe(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, PlanTable, PlanColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPlanWith applies the HasEdge predicate on the "plan" edge with a given conditions (other predicates).
+func HasPlanWith(preds ...predicate.Plan) predicate.Subscribe {
+	return predicate.Subscribe(func(s *sql.Selector) {
+		step := newPlanStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

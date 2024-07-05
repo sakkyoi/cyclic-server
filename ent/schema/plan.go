@@ -68,5 +68,6 @@ func (Plan) Edges() []ent.Edge {
 			Ref("plans").
 			Unique().
 			Required(),
+		edge.To("subscriptions", Subscribe.Type),
 	}
 }

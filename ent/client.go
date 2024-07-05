@@ -11,7 +11,6 @@ import (
 
 	"cyclic/ent/migrate"
 
-	"cyclic/ent/link"
 	"cyclic/ent/plan"
 	"cyclic/ent/subscribe"
 	"cyclic/ent/user"
@@ -28,8 +27,6 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
-	// Link is the client for interacting with the Link builders.
-	Link *LinkClient
 	// Plan is the client for interacting with the Plan builders.
 	Plan *PlanClient
 	// Subscribe is the client for interacting with the Subscribe builders.
@@ -47,7 +44,6 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
-	c.Link = NewLinkClient(c.config)
 	c.Plan = NewPlanClient(c.config)
 	c.Subscribe = NewSubscribeClient(c.config)
 	c.User = NewUserClient(c.config)
@@ -143,7 +139,6 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:       ctx,
 		config:    cfg,
-		Link:      NewLinkClient(cfg),
 		Plan:      NewPlanClient(cfg),
 		Subscribe: NewSubscribeClient(cfg),
 		User:      NewUserClient(cfg),
@@ -166,7 +161,6 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	return &Tx{
 		ctx:       ctx,
 		config:    cfg,
-		Link:      NewLinkClient(cfg),
 		Plan:      NewPlanClient(cfg),
 		Subscribe: NewSubscribeClient(cfg),
 		User:      NewUserClient(cfg),
@@ -176,7 +170,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Link.
+//		Plan.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -198,7 +192,6 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Link.Use(hooks...)
 	c.Plan.Use(hooks...)
 	c.Subscribe.Use(hooks...)
 	c.User.Use(hooks...)
@@ -207,7 +200,6 @@ func (c *Client) Use(hooks ...Hook) {
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Link.Intercept(interceptors...)
 	c.Plan.Intercept(interceptors...)
 	c.Subscribe.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
@@ -216,8 +208,6 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 // Mutate implements the ent.Mutator interface.
 func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
-	case *LinkMutation:
-		return c.Link.mutate(ctx, m)
 	case *PlanMutation:
 		return c.Plan.mutate(ctx, m)
 	case *SubscribeMutation:
@@ -226,155 +216,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.User.mutate(ctx, m)
 	default:
 		return nil, fmt.Errorf("ent: unknown mutation type %T", m)
-	}
-}
-
-// LinkClient is a client for the Link schema.
-type LinkClient struct {
-	config
-}
-
-// NewLinkClient returns a client for the Link from the given config.
-func NewLinkClient(c config) *LinkClient {
-	return &LinkClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `link.Hooks(f(g(h())))`.
-func (c *LinkClient) Use(hooks ...Hook) {
-	c.hooks.Link = append(c.hooks.Link, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `link.Intercept(f(g(h())))`.
-func (c *LinkClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Link = append(c.inters.Link, interceptors...)
-}
-
-// Create returns a builder for creating a Link entity.
-func (c *LinkClient) Create() *LinkCreate {
-	mutation := newLinkMutation(c.config, OpCreate)
-	return &LinkCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of Link entities.
-func (c *LinkClient) CreateBulk(builders ...*LinkCreate) *LinkCreateBulk {
-	return &LinkCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *LinkClient) MapCreateBulk(slice any, setFunc func(*LinkCreate, int)) *LinkCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &LinkCreateBulk{err: fmt.Errorf("calling to LinkClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*LinkCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &LinkCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for Link.
-func (c *LinkClient) Update() *LinkUpdate {
-	mutation := newLinkMutation(c.config, OpUpdate)
-	return &LinkUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *LinkClient) UpdateOne(l *Link) *LinkUpdateOne {
-	mutation := newLinkMutation(c.config, OpUpdateOne, withLink(l))
-	return &LinkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *LinkClient) UpdateOneID(id uuid.UUID) *LinkUpdateOne {
-	mutation := newLinkMutation(c.config, OpUpdateOne, withLinkID(id))
-	return &LinkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for Link.
-func (c *LinkClient) Delete() *LinkDelete {
-	mutation := newLinkMutation(c.config, OpDelete)
-	return &LinkDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *LinkClient) DeleteOne(l *Link) *LinkDeleteOne {
-	return c.DeleteOneID(l.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *LinkClient) DeleteOneID(id uuid.UUID) *LinkDeleteOne {
-	builder := c.Delete().Where(link.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &LinkDeleteOne{builder}
-}
-
-// Query returns a query builder for Link.
-func (c *LinkClient) Query() *LinkQuery {
-	return &LinkQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeLink},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a Link entity by its id.
-func (c *LinkClient) Get(ctx context.Context, id uuid.UUID) (*Link, error) {
-	return c.Query().Where(link.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *LinkClient) GetX(ctx context.Context, id uuid.UUID) *Link {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryOwner queries the owner edge of a Link.
-func (c *LinkClient) QueryOwner(l *Link) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := l.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(link.Table, link.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, link.OwnerTable, link.OwnerColumn),
-		)
-		fromV = sqlgraph.Neighbors(l.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *LinkClient) Hooks() []Hook {
-	return c.hooks.Link
-}
-
-// Interceptors returns the client interceptors.
-func (c *LinkClient) Interceptors() []Interceptor {
-	return c.inters.Link
-}
-
-func (c *LinkClient) mutate(ctx context.Context, m *LinkMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&LinkCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&LinkUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&LinkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&LinkDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown Link mutation op: %q", m.Op())
 	}
 }
 
@@ -495,6 +336,22 @@ func (c *PlanClient) QueryHost(pl *Plan) *UserQuery {
 			sqlgraph.From(plan.Table, plan.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, plan.HostTable, plan.HostColumn),
+		)
+		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySubscriptions queries the subscriptions edge of a Plan.
+func (c *PlanClient) QuerySubscriptions(pl *Plan) *SubscribeQuery {
+	query := (&SubscribeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pl.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(plan.Table, plan.FieldID, id),
+			sqlgraph.To(subscribe.Table, subscribe.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, plan.SubscriptionsTable, plan.SubscriptionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
 		return fromV, nil
@@ -635,15 +492,31 @@ func (c *SubscribeClient) GetX(ctx context.Context, id uuid.UUID) *Subscribe {
 	return obj
 }
 
-// QueryUsers queries the users edge of a Subscribe.
-func (c *SubscribeClient) QueryUsers(s *Subscribe) *UserQuery {
+// QueryUser queries the user edge of a Subscribe.
+func (c *SubscribeClient) QueryUser(s *Subscribe) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := s.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(subscribe.Table, subscribe.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, false, subscribe.UsersTable, subscribe.UsersPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscribe.UserTable, subscribe.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPlan queries the plan edge of a Subscribe.
+func (c *SubscribeClient) QueryPlan(s *Subscribe) *PlanQuery {
+	query := (&PlanClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscribe.Table, subscribe.FieldID, id),
+			sqlgraph.To(plan.Table, plan.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscribe.PlanTable, subscribe.PlanColumn),
 		)
 		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
 		return fromV, nil
@@ -784,22 +657,6 @@ func (c *UserClient) GetX(ctx context.Context, id uuid.UUID) *User {
 	return obj
 }
 
-// QueryLinks queries the links edge of a User.
-func (c *UserClient) QueryLinks(u *User) *LinkQuery {
-	query := (&LinkClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := u.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(link.Table, link.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.LinksTable, user.LinksColumn),
-		)
-		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryPlans queries the plans edge of a User.
 func (c *UserClient) QueryPlans(u *User) *PlanQuery {
 	query := (&PlanClient{config: c.config}).Query()
@@ -824,7 +681,7 @@ func (c *UserClient) QuerySubscriptions(u *User) *SubscribeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(subscribe.Table, subscribe.FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, user.SubscriptionsTable, user.SubscriptionsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SubscriptionsTable, user.SubscriptionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil
@@ -860,9 +717,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Link, Plan, Subscribe, User []ent.Hook
+		Plan, Subscribe, User []ent.Hook
 	}
 	inters struct {
-		Link, Plan, Subscribe, User []ent.Interceptor
+		Plan, Subscribe, User []ent.Interceptor
 	}
 )

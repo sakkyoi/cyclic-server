@@ -8,27 +8,6 @@ import (
 )
 
 var (
-	// LinksColumns holds the columns for the "links" table.
-	LinksColumns = []*schema.Column{
-		{Name: "id", Type: field.TypeUUID},
-		{Name: "type", Type: field.TypeEnum, Enums: []string{"email", "telegram", "line"}},
-		{Name: "address", Type: field.TypeString},
-		{Name: "user_links", Type: field.TypeUUID},
-	}
-	// LinksTable holds the schema information for the "links" table.
-	LinksTable = &schema.Table{
-		Name:       "links",
-		Columns:    LinksColumns,
-		PrimaryKey: []*schema.Column{LinksColumns[0]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "links_users_links",
-				Columns:    []*schema.Column{LinksColumns[3]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.NoAction,
-			},
-		},
-	}
 	// PlansColumns holds the columns for the "plans" table.
 	PlansColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -63,14 +42,37 @@ var (
 	// SubscribesColumns holds the columns for the "subscribes" table.
 	SubscribesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
-		{Name: "subscribed_at", Type: field.TypeTime},
+		{Name: "subscribed_at", Type: field.TypeTime, Nullable: true},
 		{Name: "left_at", Type: field.TypeTime, Nullable: true},
+		{Name: "plan_subscriptions", Type: field.TypeUUID},
+		{Name: "user_subscriptions", Type: field.TypeUUID},
 	}
 	// SubscribesTable holds the schema information for the "subscribes" table.
 	SubscribesTable = &schema.Table{
 		Name:       "subscribes",
 		Columns:    SubscribesColumns,
 		PrimaryKey: []*schema.Column{SubscribesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "subscribes_plans_subscriptions",
+				Columns:    []*schema.Column{SubscribesColumns[3]},
+				RefColumns: []*schema.Column{PlansColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "subscribes_users_subscriptions",
+				Columns:    []*schema.Column{SubscribesColumns[4]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subscribe_user_subscriptions_plan_subscriptions",
+				Unique:  true,
+				Columns: []*schema.Column{SubscribesColumns[4], SubscribesColumns[3]},
+			},
+		},
 	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
@@ -88,44 +90,16 @@ var (
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
 	}
-	// SubscribeUsersColumns holds the columns for the "subscribe_users" table.
-	SubscribeUsersColumns = []*schema.Column{
-		{Name: "subscribe_id", Type: field.TypeUUID},
-		{Name: "user_id", Type: field.TypeUUID},
-	}
-	// SubscribeUsersTable holds the schema information for the "subscribe_users" table.
-	SubscribeUsersTable = &schema.Table{
-		Name:       "subscribe_users",
-		Columns:    SubscribeUsersColumns,
-		PrimaryKey: []*schema.Column{SubscribeUsersColumns[0], SubscribeUsersColumns[1]},
-		ForeignKeys: []*schema.ForeignKey{
-			{
-				Symbol:     "subscribe_users_subscribe_id",
-				Columns:    []*schema.Column{SubscribeUsersColumns[0]},
-				RefColumns: []*schema.Column{SubscribesColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-			{
-				Symbol:     "subscribe_users_user_id",
-				Columns:    []*schema.Column{SubscribeUsersColumns[1]},
-				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.Cascade,
-			},
-		},
-	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
-		LinksTable,
 		PlansTable,
 		SubscribesTable,
 		UsersTable,
-		SubscribeUsersTable,
 	}
 )
 
 func init() {
-	LinksTable.ForeignKeys[0].RefTable = UsersTable
 	PlansTable.ForeignKeys[0].RefTable = UsersTable
-	SubscribeUsersTable.ForeignKeys[0].RefTable = SubscribesTable
-	SubscribeUsersTable.ForeignKeys[1].RefTable = UsersTable
+	SubscribesTable.ForeignKeys[0].RefTable = PlansTable
+	SubscribesTable.ForeignKeys[1].RefTable = UsersTable
 }

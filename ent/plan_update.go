@@ -6,6 +6,7 @@ import (
 	"context"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
+	"cyclic/ent/subscribe"
 	"cyclic/ent/user"
 	"errors"
 	"fmt"
@@ -213,6 +214,21 @@ func (pu *PlanUpdate) SetHost(u *User) *PlanUpdate {
 	return pu.SetHostID(u.ID)
 }
 
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscribe entity by IDs.
+func (pu *PlanUpdate) AddSubscriptionIDs(ids ...uuid.UUID) *PlanUpdate {
+	pu.mutation.AddSubscriptionIDs(ids...)
+	return pu
+}
+
+// AddSubscriptions adds the "subscriptions" edges to the Subscribe entity.
+func (pu *PlanUpdate) AddSubscriptions(s ...*Subscribe) *PlanUpdate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return pu.AddSubscriptionIDs(ids...)
+}
+
 // Mutation returns the PlanMutation object of the builder.
 func (pu *PlanUpdate) Mutation() *PlanMutation {
 	return pu.mutation
@@ -222,6 +238,27 @@ func (pu *PlanUpdate) Mutation() *PlanMutation {
 func (pu *PlanUpdate) ClearHost() *PlanUpdate {
 	pu.mutation.ClearHost()
 	return pu
+}
+
+// ClearSubscriptions clears all "subscriptions" edges to the Subscribe entity.
+func (pu *PlanUpdate) ClearSubscriptions() *PlanUpdate {
+	pu.mutation.ClearSubscriptions()
+	return pu
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to Subscribe entities by IDs.
+func (pu *PlanUpdate) RemoveSubscriptionIDs(ids ...uuid.UUID) *PlanUpdate {
+	pu.mutation.RemoveSubscriptionIDs(ids...)
+	return pu
+}
+
+// RemoveSubscriptions removes "subscriptions" edges to Subscribe entities.
+func (pu *PlanUpdate) RemoveSubscriptions(s ...*Subscribe) *PlanUpdate {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return pu.RemoveSubscriptionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -352,6 +389,51 @@ func (pu *PlanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.SubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   plan.SubscriptionsTable,
+			Columns: []string{plan.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.RemovedSubscriptionsIDs(); len(nodes) > 0 && !pu.mutation.SubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   plan.SubscriptionsTable,
+			Columns: []string{plan.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.SubscriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   plan.SubscriptionsTable,
+			Columns: []string{plan.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -562,6 +644,21 @@ func (puo *PlanUpdateOne) SetHost(u *User) *PlanUpdateOne {
 	return puo.SetHostID(u.ID)
 }
 
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscribe entity by IDs.
+func (puo *PlanUpdateOne) AddSubscriptionIDs(ids ...uuid.UUID) *PlanUpdateOne {
+	puo.mutation.AddSubscriptionIDs(ids...)
+	return puo
+}
+
+// AddSubscriptions adds the "subscriptions" edges to the Subscribe entity.
+func (puo *PlanUpdateOne) AddSubscriptions(s ...*Subscribe) *PlanUpdateOne {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return puo.AddSubscriptionIDs(ids...)
+}
+
 // Mutation returns the PlanMutation object of the builder.
 func (puo *PlanUpdateOne) Mutation() *PlanMutation {
 	return puo.mutation
@@ -571,6 +668,27 @@ func (puo *PlanUpdateOne) Mutation() *PlanMutation {
 func (puo *PlanUpdateOne) ClearHost() *PlanUpdateOne {
 	puo.mutation.ClearHost()
 	return puo
+}
+
+// ClearSubscriptions clears all "subscriptions" edges to the Subscribe entity.
+func (puo *PlanUpdateOne) ClearSubscriptions() *PlanUpdateOne {
+	puo.mutation.ClearSubscriptions()
+	return puo
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to Subscribe entities by IDs.
+func (puo *PlanUpdateOne) RemoveSubscriptionIDs(ids ...uuid.UUID) *PlanUpdateOne {
+	puo.mutation.RemoveSubscriptionIDs(ids...)
+	return puo
+}
+
+// RemoveSubscriptions removes "subscriptions" edges to Subscribe entities.
+func (puo *PlanUpdateOne) RemoveSubscriptions(s ...*Subscribe) *PlanUpdateOne {
+	ids := make([]uuid.UUID, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return puo.RemoveSubscriptionIDs(ids...)
 }
 
 // Where appends a list predicates to the PlanUpdate builder.
@@ -731,6 +849,51 @@ func (puo *PlanUpdateOne) sqlSave(ctx context.Context) (_node *Plan, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.SubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   plan.SubscriptionsTable,
+			Columns: []string{plan.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.RemovedSubscriptionsIDs(); len(nodes) > 0 && !puo.mutation.SubscriptionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   plan.SubscriptionsTable,
+			Columns: []string{plan.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.SubscriptionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   plan.SubscriptionsTable,
+			Columns: []string{plan.SubscriptionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

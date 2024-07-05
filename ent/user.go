@@ -37,30 +37,19 @@ type User struct {
 
 // UserEdges holds the relations/edges for other nodes in the graph.
 type UserEdges struct {
-	// Links holds the value of the links edge.
-	Links []*Link `json:"links,omitempty"`
 	// Plans holds the value of the plans edge.
 	Plans []*Plan `json:"plans,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
 	Subscriptions []*Subscribe `json:"subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
-}
-
-// LinksOrErr returns the Links value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) LinksOrErr() ([]*Link, error) {
-	if e.loadedTypes[0] {
-		return e.Links, nil
-	}
-	return nil, &NotLoadedError{edge: "links"}
+	loadedTypes [2]bool
 }
 
 // PlansOrErr returns the Plans value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PlansOrErr() ([]*Plan, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[0] {
 		return e.Plans, nil
 	}
 	return nil, &NotLoadedError{edge: "plans"}
@@ -69,7 +58,7 @@ func (e UserEdges) PlansOrErr() ([]*Plan, error) {
 // SubscriptionsOrErr returns the Subscriptions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) SubscriptionsOrErr() ([]*Subscribe, error) {
-	if e.loadedTypes[2] {
+	if e.loadedTypes[1] {
 		return e.Subscriptions, nil
 	}
 	return nil, &NotLoadedError{edge: "subscriptions"}
@@ -156,11 +145,6 @@ func (u *User) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (u *User) Value(name string) (ent.Value, error) {
 	return u.selectValues.Get(name)
-}
-
-// QueryLinks queries the "links" edge of the User entity.
-func (u *User) QueryLinks() *LinkQuery {
-	return NewUserClient(u.config).QueryLinks(u)
 }
 
 // QueryPlans queries the "plans" edge of the User entity.

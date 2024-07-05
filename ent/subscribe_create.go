@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"cyclic/ent/plan"
 	"cyclic/ent/subscribe"
 	"cyclic/ent/user"
 	"errors"
@@ -64,19 +65,26 @@ func (sc *SubscribeCreate) SetNillableID(u *uuid.UUID) *SubscribeCreate {
 	return sc
 }
 
-// AddUserIDs adds the "users" edge to the User entity by IDs.
-func (sc *SubscribeCreate) AddUserIDs(ids ...uuid.UUID) *SubscribeCreate {
-	sc.mutation.AddUserIDs(ids...)
+// SetUserID sets the "user" edge to the User entity by ID.
+func (sc *SubscribeCreate) SetUserID(id uuid.UUID) *SubscribeCreate {
+	sc.mutation.SetUserID(id)
 	return sc
 }
 
-// AddUsers adds the "users" edges to the User entity.
-func (sc *SubscribeCreate) AddUsers(u ...*User) *SubscribeCreate {
-	ids := make([]uuid.UUID, len(u))
-	for i := range u {
-		ids[i] = u[i].ID
-	}
-	return sc.AddUserIDs(ids...)
+// SetUser sets the "user" edge to the User entity.
+func (sc *SubscribeCreate) SetUser(u *User) *SubscribeCreate {
+	return sc.SetUserID(u.ID)
+}
+
+// SetPlanID sets the "plan" edge to the Plan entity by ID.
+func (sc *SubscribeCreate) SetPlanID(id uuid.UUID) *SubscribeCreate {
+	sc.mutation.SetPlanID(id)
+	return sc
+}
+
+// SetPlan sets the "plan" edge to the Plan entity.
+func (sc *SubscribeCreate) SetPlan(p *Plan) *SubscribeCreate {
+	return sc.SetPlanID(p.ID)
 }
 
 // Mutation returns the SubscribeMutation object of the builder.
@@ -114,10 +122,6 @@ func (sc *SubscribeCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (sc *SubscribeCreate) defaults() {
-	if _, ok := sc.mutation.SubscribedAt(); !ok {
-		v := subscribe.DefaultSubscribedAt()
-		sc.mutation.SetSubscribedAt(v)
-	}
 	if _, ok := sc.mutation.ID(); !ok {
 		v := subscribe.DefaultID()
 		sc.mutation.SetID(v)
@@ -126,8 +130,11 @@ func (sc *SubscribeCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (sc *SubscribeCreate) check() error {
-	if _, ok := sc.mutation.SubscribedAt(); !ok {
-		return &ValidationError{Name: "subscribed_at", err: errors.New(`ent: missing required field "Subscribe.subscribed_at"`)}
+	if _, ok := sc.mutation.UserID(); !ok {
+		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Subscribe.user"`)}
+	}
+	if _, ok := sc.mutation.PlanID(); !ok {
+		return &ValidationError{Name: "plan", err: errors.New(`ent: missing required edge "Subscribe.plan"`)}
 	}
 	return nil
 }
@@ -172,12 +179,12 @@ func (sc *SubscribeCreate) createSpec() (*Subscribe, *sqlgraph.CreateSpec) {
 		_spec.SetField(subscribe.FieldLeftAt, field.TypeTime, value)
 		_node.LeftAt = value
 	}
-	if nodes := sc.mutation.UsersIDs(); len(nodes) > 0 {
+	if nodes := sc.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2M,
-			Inverse: false,
-			Table:   subscribe.UsersTable,
-			Columns: subscribe.UsersPrimaryKey,
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   subscribe.UserTable,
+			Columns: []string{subscribe.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
@@ -186,6 +193,24 @@ func (sc *SubscribeCreate) createSpec() (*Subscribe, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_node.user_subscriptions = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := sc.mutation.PlanIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   subscribe.PlanTable,
+			Columns: []string{subscribe.PlanColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(plan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.plan_subscriptions = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

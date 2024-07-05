@@ -40,9 +40,7 @@ func (User) Fields() []ent.Field {
 // Edges of the User.
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("links", Link.Type),
 		edge.To("plans", Plan.Type),
-		edge.From("subscriptions", Subscribe.Type).
-			Ref("users"),
+		edge.To("subscriptions", Subscribe.Type),
 	}
 }

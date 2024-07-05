@@ -25,21 +25,12 @@ const (
 	FieldRole = "role"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
-	// EdgeLinks holds the string denoting the links edge name in mutations.
-	EdgeLinks = "links"
 	// EdgePlans holds the string denoting the plans edge name in mutations.
 	EdgePlans = "plans"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
 	EdgeSubscriptions = "subscriptions"
 	// Table holds the table name of the user in the database.
 	Table = "users"
-	// LinksTable is the table that holds the links relation/edge.
-	LinksTable = "links"
-	// LinksInverseTable is the table name for the Link entity.
-	// It exists in this package in order to avoid circular dependency with the "link" package.
-	LinksInverseTable = "links"
-	// LinksColumn is the table column denoting the links relation/edge.
-	LinksColumn = "user_links"
 	// PlansTable is the table that holds the plans relation/edge.
 	PlansTable = "plans"
 	// PlansInverseTable is the table name for the Plan entity.
@@ -47,11 +38,13 @@ const (
 	PlansInverseTable = "plans"
 	// PlansColumn is the table column denoting the plans relation/edge.
 	PlansColumn = "user_plans"
-	// SubscriptionsTable is the table that holds the subscriptions relation/edge. The primary key declared below.
-	SubscriptionsTable = "subscribe_users"
+	// SubscriptionsTable is the table that holds the subscriptions relation/edge.
+	SubscriptionsTable = "subscribes"
 	// SubscriptionsInverseTable is the table name for the Subscribe entity.
 	// It exists in this package in order to avoid circular dependency with the "subscribe" package.
 	SubscriptionsInverseTable = "subscribes"
+	// SubscriptionsColumn is the table column denoting the subscriptions relation/edge.
+	SubscriptionsColumn = "user_subscriptions"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -64,12 +57,6 @@ var Columns = []string{
 	FieldRole,
 	FieldActive,
 }
-
-var (
-	// SubscriptionsPrimaryKey and SubscriptionsColumn2 are the table columns denoting the
-	// primary key for the subscriptions relation (M2M).
-	SubscriptionsPrimaryKey = []string{"subscribe_id", "user_id"}
-)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -127,20 +114,6 @@ func ByActive(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActive, opts...).ToFunc()
 }
 
-// ByLinksCount orders the results by links count.
-func ByLinksCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newLinksStep(), opts...)
-	}
-}
-
-// ByLinks orders the results by links terms.
-func ByLinks(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newLinksStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByPlansCount orders the results by plans count.
 func ByPlansCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -168,13 +141,6 @@ func BySubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newSubscriptionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
-func newLinksStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(LinksInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, LinksTable, LinksColumn),
-	)
-}
 func newPlansStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -186,6 +152,6 @@ func newSubscriptionsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscriptionsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, true, SubscriptionsTable, SubscriptionsPrimaryKey...),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionsTable, SubscriptionsColumn),
 	)
 }

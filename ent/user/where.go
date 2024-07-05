@@ -425,29 +425,6 @@ func ActiveNEQ(v bool) predicate.User {
 	return predicate.User(sql.FieldNEQ(FieldActive, v))
 }
 
-// HasLinks applies the HasEdge predicate on the "links" edge.
-func HasLinks() predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		step := sqlgraph.NewStep(
-			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, LinksTable, LinksColumn),
-		)
-		sqlgraph.HasNeighbors(s, step)
-	})
-}
-
-// HasLinksWith applies the HasEdge predicate on the "links" edge with a given conditions (other predicates).
-func HasLinksWith(preds ...predicate.Link) predicate.User {
-	return predicate.User(func(s *sql.Selector) {
-		step := newLinksStep()
-		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
-			for _, p := range preds {
-				p(s)
-			}
-		})
-	})
-}
-
 // HasPlans applies the HasEdge predicate on the "plans" edge.
 func HasPlans() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
@@ -476,7 +453,7 @@ func HasSubscriptions() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.Edge(sqlgraph.M2M, true, SubscriptionsTable, SubscriptionsPrimaryKey...),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionsTable, SubscriptionsColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})

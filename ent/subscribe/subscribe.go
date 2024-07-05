@@ -3,8 +3,6 @@
 package subscribe
 
 import (
-	"time"
-
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
@@ -19,15 +17,26 @@ const (
 	FieldSubscribedAt = "subscribed_at"
 	// FieldLeftAt holds the string denoting the left_at field in the database.
 	FieldLeftAt = "left_at"
-	// EdgeUsers holds the string denoting the users edge name in mutations.
-	EdgeUsers = "users"
+	// EdgeUser holds the string denoting the user edge name in mutations.
+	EdgeUser = "user"
+	// EdgePlan holds the string denoting the plan edge name in mutations.
+	EdgePlan = "plan"
 	// Table holds the table name of the subscribe in the database.
 	Table = "subscribes"
-	// UsersTable is the table that holds the users relation/edge. The primary key declared below.
-	UsersTable = "subscribe_users"
-	// UsersInverseTable is the table name for the User entity.
+	// UserTable is the table that holds the user relation/edge.
+	UserTable = "subscribes"
+	// UserInverseTable is the table name for the User entity.
 	// It exists in this package in order to avoid circular dependency with the "user" package.
-	UsersInverseTable = "users"
+	UserInverseTable = "users"
+	// UserColumn is the table column denoting the user relation/edge.
+	UserColumn = "user_subscriptions"
+	// PlanTable is the table that holds the plan relation/edge.
+	PlanTable = "subscribes"
+	// PlanInverseTable is the table name for the Plan entity.
+	// It exists in this package in order to avoid circular dependency with the "plan" package.
+	PlanInverseTable = "plans"
+	// PlanColumn is the table column denoting the plan relation/edge.
+	PlanColumn = "plan_subscriptions"
 )
 
 // Columns holds all SQL columns for subscribe fields.
@@ -37,11 +46,12 @@ var Columns = []string{
 	FieldLeftAt,
 }
 
-var (
-	// UsersPrimaryKey and UsersColumn2 are the table columns denoting the
-	// primary key for the users relation (M2M).
-	UsersPrimaryKey = []string{"subscribe_id", "user_id"}
-)
+// ForeignKeys holds the SQL foreign-keys that are owned by the "subscribes"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"plan_subscriptions",
+	"user_subscriptions",
+}
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -50,12 +60,15 @@ func ValidColumn(column string) bool {
 			return true
 		}
 	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
+			return true
+		}
+	}
 	return false
 }
 
 var (
-	// DefaultSubscribedAt holds the default value on creation for the "subscribed_at" field.
-	DefaultSubscribedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -78,23 +91,30 @@ func ByLeftAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLeftAt, opts...).ToFunc()
 }
 
-// ByUsersCount orders the results by users count.
-func ByUsersCount(opts ...sql.OrderTermOption) OrderOption {
+// ByUserField orders the results by user field.
+func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newUsersStep(), opts...)
+		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
 	}
 }
 
-// ByUsers orders the results by users terms.
-func ByUsers(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+// ByPlanField orders the results by plan field.
+func ByPlanField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newUsersStep(), append([]sql.OrderTerm{term}, terms...)...)
+		sqlgraph.OrderByNeighborTerms(s, newPlanStep(), sql.OrderByField(field, opts...))
 	}
 }
-func newUsersStep() *sqlgraph.Step {
+func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(UsersInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.M2M, false, UsersTable, UsersPrimaryKey...),
+		sqlgraph.To(UserInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+	)
+}
+func newPlanStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PlanInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, PlanTable, PlanColumn),
 	)
 }

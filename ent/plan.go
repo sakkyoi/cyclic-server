@@ -54,9 +54,11 @@ type Plan struct {
 type PlanEdges struct {
 	// Host holds the value of the host edge.
 	Host *User `json:"host,omitempty"`
+	// Subscriptions holds the value of the subscriptions edge.
+	Subscriptions []*Subscribe `json:"subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // HostOrErr returns the Host value or an error if the edge
@@ -68,6 +70,15 @@ func (e PlanEdges) HostOrErr() (*User, error) {
 		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "host"}
+}
+
+// SubscriptionsOrErr returns the Subscriptions value or an error if the edge
+// was not loaded in eager-loading.
+func (e PlanEdges) SubscriptionsOrErr() ([]*Subscribe, error) {
+	if e.loadedTypes[1] {
+		return e.Subscriptions, nil
+	}
+	return nil, &NotLoadedError{edge: "subscriptions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -205,6 +216,11 @@ func (pl *Plan) Value(name string) (ent.Value, error) {
 // QueryHost queries the "host" edge of the Plan entity.
 func (pl *Plan) QueryHost() *UserQuery {
 	return NewPlanClient(pl.config).QueryHost(pl)
+}
+
+// QuerySubscriptions queries the "subscriptions" edge of the Plan entity.
+func (pl *Plan) QuerySubscriptions() *SubscribeQuery {
+	return NewPlanClient(pl.config).QuerySubscriptions(pl)
 }
 
 // Update returns a builder for updating this Plan.

@@ -4,7 +4,6 @@ package ent
 
 import (
 	"context"
-	"cyclic/ent/link"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
 	"cyclic/ent/subscribe"
@@ -28,491 +27,40 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeLink      = "Link"
 	TypePlan      = "Plan"
 	TypeSubscribe = "Subscribe"
 	TypeUser      = "User"
 )
 
-// LinkMutation represents an operation that mutates the Link nodes in the graph.
-type LinkMutation struct {
-	config
-	op            Op
-	typ           string
-	id            *uuid.UUID
-	_type         *link.Type
-	address       *string
-	clearedFields map[string]struct{}
-	owner         *uuid.UUID
-	clearedowner  bool
-	done          bool
-	oldValue      func(context.Context) (*Link, error)
-	predicates    []predicate.Link
-}
-
-var _ ent.Mutation = (*LinkMutation)(nil)
-
-// linkOption allows management of the mutation configuration using functional options.
-type linkOption func(*LinkMutation)
-
-// newLinkMutation creates new mutation for the Link entity.
-func newLinkMutation(c config, op Op, opts ...linkOption) *LinkMutation {
-	m := &LinkMutation{
-		config:        c,
-		op:            op,
-		typ:           TypeLink,
-		clearedFields: make(map[string]struct{}),
-	}
-	for _, opt := range opts {
-		opt(m)
-	}
-	return m
-}
-
-// withLinkID sets the ID field of the mutation.
-func withLinkID(id uuid.UUID) linkOption {
-	return func(m *LinkMutation) {
-		var (
-			err   error
-			once  sync.Once
-			value *Link
-		)
-		m.oldValue = func(ctx context.Context) (*Link, error) {
-			once.Do(func() {
-				if m.done {
-					err = errors.New("querying old values post mutation is not allowed")
-				} else {
-					value, err = m.Client().Link.Get(ctx, id)
-				}
-			})
-			return value, err
-		}
-		m.id = &id
-	}
-}
-
-// withLink sets the old Link of the mutation.
-func withLink(node *Link) linkOption {
-	return func(m *LinkMutation) {
-		m.oldValue = func(context.Context) (*Link, error) {
-			return node, nil
-		}
-		m.id = &node.ID
-	}
-}
-
-// Client returns a new `ent.Client` from the mutation. If the mutation was
-// executed in a transaction (ent.Tx), a transactional client is returned.
-func (m LinkMutation) Client() *Client {
-	client := &Client{config: m.config}
-	client.init()
-	return client
-}
-
-// Tx returns an `ent.Tx` for mutations that were executed in transactions;
-// it returns an error otherwise.
-func (m LinkMutation) Tx() (*Tx, error) {
-	if _, ok := m.driver.(*txDriver); !ok {
-		return nil, errors.New("ent: mutation is not running in a transaction")
-	}
-	tx := &Tx{config: m.config}
-	tx.init()
-	return tx, nil
-}
-
-// SetID sets the value of the id field. Note that this
-// operation is only accepted on creation of Link entities.
-func (m *LinkMutation) SetID(id uuid.UUID) {
-	m.id = &id
-}
-
-// ID returns the ID value in the mutation. Note that the ID is only available
-// if it was provided to the builder or after it was returned from the database.
-func (m *LinkMutation) ID() (id uuid.UUID, exists bool) {
-	if m.id == nil {
-		return
-	}
-	return *m.id, true
-}
-
-// IDs queries the database and returns the entity ids that match the mutation's predicate.
-// That means, if the mutation is applied within a transaction with an isolation level such
-// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
-// or updated by the mutation.
-func (m *LinkMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
-	switch {
-	case m.op.Is(OpUpdateOne | OpDeleteOne):
-		id, exists := m.ID()
-		if exists {
-			return []uuid.UUID{id}, nil
-		}
-		fallthrough
-	case m.op.Is(OpUpdate | OpDelete):
-		return m.Client().Link.Query().Where(m.predicates...).IDs(ctx)
-	default:
-		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
-	}
-}
-
-// SetType sets the "type" field.
-func (m *LinkMutation) SetType(l link.Type) {
-	m._type = &l
-}
-
-// GetType returns the value of the "type" field in the mutation.
-func (m *LinkMutation) GetType() (r link.Type, exists bool) {
-	v := m._type
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldType returns the old "type" field's value of the Link entity.
-// If the Link object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *LinkMutation) OldType(ctx context.Context) (v link.Type, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldType is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldType requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldType: %w", err)
-	}
-	return oldValue.Type, nil
-}
-
-// ResetType resets all changes to the "type" field.
-func (m *LinkMutation) ResetType() {
-	m._type = nil
-}
-
-// SetAddress sets the "address" field.
-func (m *LinkMutation) SetAddress(s string) {
-	m.address = &s
-}
-
-// Address returns the value of the "address" field in the mutation.
-func (m *LinkMutation) Address() (r string, exists bool) {
-	v := m.address
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldAddress returns the old "address" field's value of the Link entity.
-// If the Link object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *LinkMutation) OldAddress(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAddress is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAddress requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAddress: %w", err)
-	}
-	return oldValue.Address, nil
-}
-
-// ResetAddress resets all changes to the "address" field.
-func (m *LinkMutation) ResetAddress() {
-	m.address = nil
-}
-
-// SetOwnerID sets the "owner" edge to the User entity by id.
-func (m *LinkMutation) SetOwnerID(id uuid.UUID) {
-	m.owner = &id
-}
-
-// ClearOwner clears the "owner" edge to the User entity.
-func (m *LinkMutation) ClearOwner() {
-	m.clearedowner = true
-}
-
-// OwnerCleared reports if the "owner" edge to the User entity was cleared.
-func (m *LinkMutation) OwnerCleared() bool {
-	return m.clearedowner
-}
-
-// OwnerID returns the "owner" edge ID in the mutation.
-func (m *LinkMutation) OwnerID() (id uuid.UUID, exists bool) {
-	if m.owner != nil {
-		return *m.owner, true
-	}
-	return
-}
-
-// OwnerIDs returns the "owner" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// OwnerID instead. It exists only for internal usage by the builders.
-func (m *LinkMutation) OwnerIDs() (ids []uuid.UUID) {
-	if id := m.owner; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetOwner resets all changes to the "owner" edge.
-func (m *LinkMutation) ResetOwner() {
-	m.owner = nil
-	m.clearedowner = false
-}
-
-// Where appends a list predicates to the LinkMutation builder.
-func (m *LinkMutation) Where(ps ...predicate.Link) {
-	m.predicates = append(m.predicates, ps...)
-}
-
-// WhereP appends storage-level predicates to the LinkMutation builder. Using this method,
-// users can use type-assertion to append predicates that do not depend on any generated package.
-func (m *LinkMutation) WhereP(ps ...func(*sql.Selector)) {
-	p := make([]predicate.Link, len(ps))
-	for i := range ps {
-		p[i] = ps[i]
-	}
-	m.Where(p...)
-}
-
-// Op returns the operation name.
-func (m *LinkMutation) Op() Op {
-	return m.op
-}
-
-// SetOp allows setting the mutation operation.
-func (m *LinkMutation) SetOp(op Op) {
-	m.op = op
-}
-
-// Type returns the node type of this mutation (Link).
-func (m *LinkMutation) Type() string {
-	return m.typ
-}
-
-// Fields returns all fields that were changed during this mutation. Note that in
-// order to get all numeric fields that were incremented/decremented, call
-// AddedFields().
-func (m *LinkMutation) Fields() []string {
-	fields := make([]string, 0, 2)
-	if m._type != nil {
-		fields = append(fields, link.FieldType)
-	}
-	if m.address != nil {
-		fields = append(fields, link.FieldAddress)
-	}
-	return fields
-}
-
-// Field returns the value of a field with the given name. The second boolean
-// return value indicates that this field was not set, or was not defined in the
-// schema.
-func (m *LinkMutation) Field(name string) (ent.Value, bool) {
-	switch name {
-	case link.FieldType:
-		return m.GetType()
-	case link.FieldAddress:
-		return m.Address()
-	}
-	return nil, false
-}
-
-// OldField returns the old value of the field from the database. An error is
-// returned if the mutation operation is not UpdateOne, or the query to the
-// database failed.
-func (m *LinkMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
-	switch name {
-	case link.FieldType:
-		return m.OldType(ctx)
-	case link.FieldAddress:
-		return m.OldAddress(ctx)
-	}
-	return nil, fmt.Errorf("unknown Link field %s", name)
-}
-
-// SetField sets the value of a field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *LinkMutation) SetField(name string, value ent.Value) error {
-	switch name {
-	case link.FieldType:
-		v, ok := value.(link.Type)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetType(v)
-		return nil
-	case link.FieldAddress:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetAddress(v)
-		return nil
-	}
-	return fmt.Errorf("unknown Link field %s", name)
-}
-
-// AddedFields returns all numeric fields that were incremented/decremented during
-// this mutation.
-func (m *LinkMutation) AddedFields() []string {
-	return nil
-}
-
-// AddedField returns the numeric value that was incremented/decremented on a field
-// with the given name. The second boolean return value indicates that this field
-// was not set, or was not defined in the schema.
-func (m *LinkMutation) AddedField(name string) (ent.Value, bool) {
-	return nil, false
-}
-
-// AddField adds the value to the field with the given name. It returns an error if
-// the field is not defined in the schema, or if the type mismatched the field
-// type.
-func (m *LinkMutation) AddField(name string, value ent.Value) error {
-	switch name {
-	}
-	return fmt.Errorf("unknown Link numeric field %s", name)
-}
-
-// ClearedFields returns all nullable fields that were cleared during this
-// mutation.
-func (m *LinkMutation) ClearedFields() []string {
-	return nil
-}
-
-// FieldCleared returns a boolean indicating if a field with the given name was
-// cleared in this mutation.
-func (m *LinkMutation) FieldCleared(name string) bool {
-	_, ok := m.clearedFields[name]
-	return ok
-}
-
-// ClearField clears the value of the field with the given name. It returns an
-// error if the field is not defined in the schema.
-func (m *LinkMutation) ClearField(name string) error {
-	return fmt.Errorf("unknown Link nullable field %s", name)
-}
-
-// ResetField resets all changes in the mutation for the field with the given name.
-// It returns an error if the field is not defined in the schema.
-func (m *LinkMutation) ResetField(name string) error {
-	switch name {
-	case link.FieldType:
-		m.ResetType()
-		return nil
-	case link.FieldAddress:
-		m.ResetAddress()
-		return nil
-	}
-	return fmt.Errorf("unknown Link field %s", name)
-}
-
-// AddedEdges returns all edge names that were set/added in this mutation.
-func (m *LinkMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.owner != nil {
-		edges = append(edges, link.EdgeOwner)
-	}
-	return edges
-}
-
-// AddedIDs returns all IDs (to other nodes) that were added for the given edge
-// name in this mutation.
-func (m *LinkMutation) AddedIDs(name string) []ent.Value {
-	switch name {
-	case link.EdgeOwner:
-		if id := m.owner; id != nil {
-			return []ent.Value{*id}
-		}
-	}
-	return nil
-}
-
-// RemovedEdges returns all edge names that were removed in this mutation.
-func (m *LinkMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	return edges
-}
-
-// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
-// the given name in this mutation.
-func (m *LinkMutation) RemovedIDs(name string) []ent.Value {
-	return nil
-}
-
-// ClearedEdges returns all edge names that were cleared in this mutation.
-func (m *LinkMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedowner {
-		edges = append(edges, link.EdgeOwner)
-	}
-	return edges
-}
-
-// EdgeCleared returns a boolean which indicates if the edge with the given name
-// was cleared in this mutation.
-func (m *LinkMutation) EdgeCleared(name string) bool {
-	switch name {
-	case link.EdgeOwner:
-		return m.clearedowner
-	}
-	return false
-}
-
-// ClearEdge clears the value of the edge with the given name. It returns an error
-// if that edge is not defined in the schema.
-func (m *LinkMutation) ClearEdge(name string) error {
-	switch name {
-	case link.EdgeOwner:
-		m.ClearOwner()
-		return nil
-	}
-	return fmt.Errorf("unknown Link unique edge %s", name)
-}
-
-// ResetEdge resets all changes to the edge with the given name in this mutation.
-// It returns an error if the edge is not defined in the schema.
-func (m *LinkMutation) ResetEdge(name string) error {
-	switch name {
-	case link.EdgeOwner:
-		m.ResetOwner()
-		return nil
-	}
-	return fmt.Errorf("unknown Link edge %s", name)
-}
-
 // PlanMutation represents an operation that mutates the Plan nodes in the graph.
 type PlanMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *uuid.UUID
-	name          *string
-	description   *string
-	price         *float32
-	addprice      *float32
-	currency      *string
-	exchangeable  *bool
-	start_from    *time.Time
-	duration_type *plan.DurationType
-	duration      *int16
-	addduration   *int16
-	auto_notify   *bool
-	created_at    *time.Time
-	updated_at    *time.Time
-	deleted_at    *time.Time
-	clearedFields map[string]struct{}
-	host          *uuid.UUID
-	clearedhost   bool
-	done          bool
-	oldValue      func(context.Context) (*Plan, error)
-	predicates    []predicate.Plan
+	op                   Op
+	typ                  string
+	id                   *uuid.UUID
+	name                 *string
+	description          *string
+	price                *float32
+	addprice             *float32
+	currency             *string
+	exchangeable         *bool
+	start_from           *time.Time
+	duration_type        *plan.DurationType
+	duration             *int16
+	addduration          *int16
+	auto_notify          *bool
+	created_at           *time.Time
+	updated_at           *time.Time
+	deleted_at           *time.Time
+	clearedFields        map[string]struct{}
+	host                 *uuid.UUID
+	clearedhost          bool
+	subscriptions        map[uuid.UUID]struct{}
+	removedsubscriptions map[uuid.UUID]struct{}
+	clearedsubscriptions bool
+	done                 bool
+	oldValue             func(context.Context) (*Plan, error)
+	predicates           []predicate.Plan
 }
 
 var _ ent.Mutation = (*PlanMutation)(nil)
@@ -1156,6 +704,60 @@ func (m *PlanMutation) ResetHost() {
 	m.clearedhost = false
 }
 
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscribe entity by ids.
+func (m *PlanMutation) AddSubscriptionIDs(ids ...uuid.UUID) {
+	if m.subscriptions == nil {
+		m.subscriptions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.subscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscriptions clears the "subscriptions" edge to the Subscribe entity.
+func (m *PlanMutation) ClearSubscriptions() {
+	m.clearedsubscriptions = true
+}
+
+// SubscriptionsCleared reports if the "subscriptions" edge to the Subscribe entity was cleared.
+func (m *PlanMutation) SubscriptionsCleared() bool {
+	return m.clearedsubscriptions
+}
+
+// RemoveSubscriptionIDs removes the "subscriptions" edge to the Subscribe entity by IDs.
+func (m *PlanMutation) RemoveSubscriptionIDs(ids ...uuid.UUID) {
+	if m.removedsubscriptions == nil {
+		m.removedsubscriptions = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.subscriptions, ids[i])
+		m.removedsubscriptions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscriptions returns the removed IDs of the "subscriptions" edge to the Subscribe entity.
+func (m *PlanMutation) RemovedSubscriptionsIDs() (ids []uuid.UUID) {
+	for id := range m.removedsubscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscriptionsIDs returns the "subscriptions" edge IDs in the mutation.
+func (m *PlanMutation) SubscriptionsIDs() (ids []uuid.UUID) {
+	for id := range m.subscriptions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscriptions resets all changes to the "subscriptions" edge.
+func (m *PlanMutation) ResetSubscriptions() {
+	m.subscriptions = nil
+	m.clearedsubscriptions = false
+	m.removedsubscriptions = nil
+}
+
 // Where appends a list predicates to the PlanMutation builder.
 func (m *PlanMutation) Where(ps ...predicate.Plan) {
 	m.predicates = append(m.predicates, ps...)
@@ -1518,9 +1120,12 @@ func (m *PlanMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PlanMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.host != nil {
 		edges = append(edges, plan.EdgeHost)
+	}
+	if m.subscriptions != nil {
+		edges = append(edges, plan.EdgeSubscriptions)
 	}
 	return edges
 }
@@ -1533,27 +1138,47 @@ func (m *PlanMutation) AddedIDs(name string) []ent.Value {
 		if id := m.host; id != nil {
 			return []ent.Value{*id}
 		}
+	case plan.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.subscriptions))
+		for id := range m.subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PlanMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
+	if m.removedsubscriptions != nil {
+		edges = append(edges, plan.EdgeSubscriptions)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *PlanMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case plan.EdgeSubscriptions:
+		ids := make([]ent.Value, 0, len(m.removedsubscriptions))
+		for id := range m.removedsubscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PlanMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedhost {
 		edges = append(edges, plan.EdgeHost)
+	}
+	if m.clearedsubscriptions {
+		edges = append(edges, plan.EdgeSubscriptions)
 	}
 	return edges
 }
@@ -1564,6 +1189,8 @@ func (m *PlanMutation) EdgeCleared(name string) bool {
 	switch name {
 	case plan.EdgeHost:
 		return m.clearedhost
+	case plan.EdgeSubscriptions:
+		return m.clearedsubscriptions
 	}
 	return false
 }
@@ -1586,6 +1213,9 @@ func (m *PlanMutation) ResetEdge(name string) error {
 	case plan.EdgeHost:
 		m.ResetHost()
 		return nil
+	case plan.EdgeSubscriptions:
+		m.ResetSubscriptions()
+		return nil
 	}
 	return fmt.Errorf("unknown Plan edge %s", name)
 }
@@ -1599,9 +1229,10 @@ type SubscribeMutation struct {
 	subscribed_at *time.Time
 	left_at       *time.Time
 	clearedFields map[string]struct{}
-	users         map[uuid.UUID]struct{}
-	removedusers  map[uuid.UUID]struct{}
-	clearedusers  bool
+	user          *uuid.UUID
+	cleareduser   bool
+	plan          *uuid.UUID
+	clearedplan   bool
 	done          bool
 	oldValue      func(context.Context) (*Subscribe, error)
 	predicates    []predicate.Subscribe
@@ -1742,9 +1373,22 @@ func (m *SubscribeMutation) OldSubscribedAt(ctx context.Context) (v time.Time, e
 	return oldValue.SubscribedAt, nil
 }
 
+// ClearSubscribedAt clears the value of the "subscribed_at" field.
+func (m *SubscribeMutation) ClearSubscribedAt() {
+	m.subscribed_at = nil
+	m.clearedFields[subscribe.FieldSubscribedAt] = struct{}{}
+}
+
+// SubscribedAtCleared returns if the "subscribed_at" field was cleared in this mutation.
+func (m *SubscribeMutation) SubscribedAtCleared() bool {
+	_, ok := m.clearedFields[subscribe.FieldSubscribedAt]
+	return ok
+}
+
 // ResetSubscribedAt resets all changes to the "subscribed_at" field.
 func (m *SubscribeMutation) ResetSubscribedAt() {
 	m.subscribed_at = nil
+	delete(m.clearedFields, subscribe.FieldSubscribedAt)
 }
 
 // SetLeftAt sets the "left_at" field.
@@ -1796,58 +1440,82 @@ func (m *SubscribeMutation) ResetLeftAt() {
 	delete(m.clearedFields, subscribe.FieldLeftAt)
 }
 
-// AddUserIDs adds the "users" edge to the User entity by ids.
-func (m *SubscribeMutation) AddUserIDs(ids ...uuid.UUID) {
-	if m.users == nil {
-		m.users = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.users[ids[i]] = struct{}{}
-	}
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *SubscribeMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
 }
 
-// ClearUsers clears the "users" edge to the User entity.
-func (m *SubscribeMutation) ClearUsers() {
-	m.clearedusers = true
+// ClearUser clears the "user" edge to the User entity.
+func (m *SubscribeMutation) ClearUser() {
+	m.cleareduser = true
 }
 
-// UsersCleared reports if the "users" edge to the User entity was cleared.
-func (m *SubscribeMutation) UsersCleared() bool {
-	return m.clearedusers
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *SubscribeMutation) UserCleared() bool {
+	return m.cleareduser
 }
 
-// RemoveUserIDs removes the "users" edge to the User entity by IDs.
-func (m *SubscribeMutation) RemoveUserIDs(ids ...uuid.UUID) {
-	if m.removedusers == nil {
-		m.removedusers = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.users, ids[i])
-		m.removedusers[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedUsers returns the removed IDs of the "users" edge to the User entity.
-func (m *SubscribeMutation) RemovedUsersIDs() (ids []uuid.UUID) {
-	for id := range m.removedusers {
-		ids = append(ids, id)
+// UserID returns the "user" edge ID in the mutation.
+func (m *SubscribeMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
 	}
 	return
 }
 
-// UsersIDs returns the "users" edge IDs in the mutation.
-func (m *SubscribeMutation) UsersIDs() (ids []uuid.UUID) {
-	for id := range m.users {
-		ids = append(ids, id)
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *SubscribeMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
 	}
 	return
 }
 
-// ResetUsers resets all changes to the "users" edge.
-func (m *SubscribeMutation) ResetUsers() {
-	m.users = nil
-	m.clearedusers = false
-	m.removedusers = nil
+// ResetUser resets all changes to the "user" edge.
+func (m *SubscribeMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetPlanID sets the "plan" edge to the Plan entity by id.
+func (m *SubscribeMutation) SetPlanID(id uuid.UUID) {
+	m.plan = &id
+}
+
+// ClearPlan clears the "plan" edge to the Plan entity.
+func (m *SubscribeMutation) ClearPlan() {
+	m.clearedplan = true
+}
+
+// PlanCleared reports if the "plan" edge to the Plan entity was cleared.
+func (m *SubscribeMutation) PlanCleared() bool {
+	return m.clearedplan
+}
+
+// PlanID returns the "plan" edge ID in the mutation.
+func (m *SubscribeMutation) PlanID() (id uuid.UUID, exists bool) {
+	if m.plan != nil {
+		return *m.plan, true
+	}
+	return
+}
+
+// PlanIDs returns the "plan" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// PlanID instead. It exists only for internal usage by the builders.
+func (m *SubscribeMutation) PlanIDs() (ids []uuid.UUID) {
+	if id := m.plan; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPlan resets all changes to the "plan" edge.
+func (m *SubscribeMutation) ResetPlan() {
+	m.plan = nil
+	m.clearedplan = false
 }
 
 // Where appends a list predicates to the SubscribeMutation builder.
@@ -1969,6 +1637,9 @@ func (m *SubscribeMutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *SubscribeMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(subscribe.FieldSubscribedAt) {
+		fields = append(fields, subscribe.FieldSubscribedAt)
+	}
 	if m.FieldCleared(subscribe.FieldLeftAt) {
 		fields = append(fields, subscribe.FieldLeftAt)
 	}
@@ -1986,6 +1657,9 @@ func (m *SubscribeMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *SubscribeMutation) ClearField(name string) error {
 	switch name {
+	case subscribe.FieldSubscribedAt:
+		m.ClearSubscribedAt()
+		return nil
 	case subscribe.FieldLeftAt:
 		m.ClearLeftAt()
 		return nil
@@ -2009,9 +1683,12 @@ func (m *SubscribeMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *SubscribeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.users != nil {
-		edges = append(edges, subscribe.EdgeUsers)
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, subscribe.EdgeUser)
+	}
+	if m.plan != nil {
+		edges = append(edges, subscribe.EdgePlan)
 	}
 	return edges
 }
@@ -2020,44 +1697,38 @@ func (m *SubscribeMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *SubscribeMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case subscribe.EdgeUsers:
-		ids := make([]ent.Value, 0, len(m.users))
-		for id := range m.users {
-			ids = append(ids, id)
+	case subscribe.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
 		}
-		return ids
+	case subscribe.EdgePlan:
+		if id := m.plan; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *SubscribeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removedusers != nil {
-		edges = append(edges, subscribe.EdgeUsers)
-	}
+	edges := make([]string, 0, 2)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *SubscribeMutation) RemovedIDs(name string) []ent.Value {
-	switch name {
-	case subscribe.EdgeUsers:
-		ids := make([]ent.Value, 0, len(m.removedusers))
-		for id := range m.removedusers {
-			ids = append(ids, id)
-		}
-		return ids
-	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *SubscribeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearedusers {
-		edges = append(edges, subscribe.EdgeUsers)
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, subscribe.EdgeUser)
+	}
+	if m.clearedplan {
+		edges = append(edges, subscribe.EdgePlan)
 	}
 	return edges
 }
@@ -2066,8 +1737,10 @@ func (m *SubscribeMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *SubscribeMutation) EdgeCleared(name string) bool {
 	switch name {
-	case subscribe.EdgeUsers:
-		return m.clearedusers
+	case subscribe.EdgeUser:
+		return m.cleareduser
+	case subscribe.EdgePlan:
+		return m.clearedplan
 	}
 	return false
 }
@@ -2076,6 +1749,12 @@ func (m *SubscribeMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *SubscribeMutation) ClearEdge(name string) error {
 	switch name {
+	case subscribe.EdgeUser:
+		m.ClearUser()
+		return nil
+	case subscribe.EdgePlan:
+		m.ClearPlan()
+		return nil
 	}
 	return fmt.Errorf("unknown Subscribe unique edge %s", name)
 }
@@ -2084,8 +1763,11 @@ func (m *SubscribeMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *SubscribeMutation) ResetEdge(name string) error {
 	switch name {
-	case subscribe.EdgeUsers:
-		m.ResetUsers()
+	case subscribe.EdgeUser:
+		m.ResetUser()
+		return nil
+	case subscribe.EdgePlan:
+		m.ResetPlan()
 		return nil
 	}
 	return fmt.Errorf("unknown Subscribe edge %s", name)
@@ -2104,9 +1786,6 @@ type UserMutation struct {
 	role                 *string
 	active               *bool
 	clearedFields        map[string]struct{}
-	links                map[uuid.UUID]struct{}
-	removedlinks         map[uuid.UUID]struct{}
-	clearedlinks         bool
 	plans                map[uuid.UUID]struct{}
 	removedplans         map[uuid.UUID]struct{}
 	clearedplans         bool
@@ -2477,60 +2156,6 @@ func (m *UserMutation) ResetActive() {
 	m.active = nil
 }
 
-// AddLinkIDs adds the "links" edge to the Link entity by ids.
-func (m *UserMutation) AddLinkIDs(ids ...uuid.UUID) {
-	if m.links == nil {
-		m.links = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		m.links[ids[i]] = struct{}{}
-	}
-}
-
-// ClearLinks clears the "links" edge to the Link entity.
-func (m *UserMutation) ClearLinks() {
-	m.clearedlinks = true
-}
-
-// LinksCleared reports if the "links" edge to the Link entity was cleared.
-func (m *UserMutation) LinksCleared() bool {
-	return m.clearedlinks
-}
-
-// RemoveLinkIDs removes the "links" edge to the Link entity by IDs.
-func (m *UserMutation) RemoveLinkIDs(ids ...uuid.UUID) {
-	if m.removedlinks == nil {
-		m.removedlinks = make(map[uuid.UUID]struct{})
-	}
-	for i := range ids {
-		delete(m.links, ids[i])
-		m.removedlinks[ids[i]] = struct{}{}
-	}
-}
-
-// RemovedLinks returns the removed IDs of the "links" edge to the Link entity.
-func (m *UserMutation) RemovedLinksIDs() (ids []uuid.UUID) {
-	for id := range m.removedlinks {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// LinksIDs returns the "links" edge IDs in the mutation.
-func (m *UserMutation) LinksIDs() (ids []uuid.UUID) {
-	for id := range m.links {
-		ids = append(ids, id)
-	}
-	return
-}
-
-// ResetLinks resets all changes to the "links" edge.
-func (m *UserMutation) ResetLinks() {
-	m.links = nil
-	m.clearedlinks = false
-	m.removedlinks = nil
-}
-
 // AddPlanIDs adds the "plans" edge to the Plan entity by ids.
 func (m *UserMutation) AddPlanIDs(ids ...uuid.UUID) {
 	if m.plans == nil {
@@ -2878,10 +2503,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.links != nil {
-		edges = append(edges, user.EdgeLinks)
-	}
+	edges := make([]string, 0, 2)
 	if m.plans != nil {
 		edges = append(edges, user.EdgePlans)
 	}
@@ -2895,12 +2517,6 @@ func (m *UserMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *UserMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case user.EdgeLinks:
-		ids := make([]ent.Value, 0, len(m.links))
-		for id := range m.links {
-			ids = append(ids, id)
-		}
-		return ids
 	case user.EdgePlans:
 		ids := make([]ent.Value, 0, len(m.plans))
 		for id := range m.plans {
@@ -2919,10 +2535,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.removedlinks != nil {
-		edges = append(edges, user.EdgeLinks)
-	}
+	edges := make([]string, 0, 2)
 	if m.removedplans != nil {
 		edges = append(edges, user.EdgePlans)
 	}
@@ -2936,12 +2549,6 @@ func (m *UserMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case user.EdgeLinks:
-		ids := make([]ent.Value, 0, len(m.removedlinks))
-		for id := range m.removedlinks {
-			ids = append(ids, id)
-		}
-		return ids
 	case user.EdgePlans:
 		ids := make([]ent.Value, 0, len(m.removedplans))
 		for id := range m.removedplans {
@@ -2960,10 +2567,7 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
-	if m.clearedlinks {
-		edges = append(edges, user.EdgeLinks)
-	}
+	edges := make([]string, 0, 2)
 	if m.clearedplans {
 		edges = append(edges, user.EdgePlans)
 	}
@@ -2977,8 +2581,6 @@ func (m *UserMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *UserMutation) EdgeCleared(name string) bool {
 	switch name {
-	case user.EdgeLinks:
-		return m.clearedlinks
 	case user.EdgePlans:
 		return m.clearedplans
 	case user.EdgeSubscriptions:
@@ -2999,9 +2601,6 @@ func (m *UserMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *UserMutation) ResetEdge(name string) error {
 	switch name {
-	case user.EdgeLinks:
-		m.ResetLinks()
-		return nil
 	case user.EdgePlans:
 		m.ResetPlans()
 		return nil
