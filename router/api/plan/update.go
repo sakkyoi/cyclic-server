@@ -28,21 +28,21 @@ type UpdateInput struct {
 func (*Plan) Update(c *gin.Context) {
 	var input UpdateInput
 	if err := c.ShouldBind(&input); err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
 		return
 	}
 
 	// parse plan id from params into uuid
 	planID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
 		return
 	}
 
 	// parse id from claims into uuid
 	hostID, err := uuid.Parse(c.MustGet("claims").(*magistrate.Claims).Subject)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, model.ErrorResponse{Type: model.ErrorUnauthorized, Error: "invalid token", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Type: model.ErrorUnauthorized, Error: "invalid token", Detail: err.Error()})
 		return
 	}
 
@@ -75,7 +75,7 @@ func (*Plan) Update(c *gin.Context) {
 	if input.StartFrom != "" {
 		startFrom, err := time.Parse(time.RFC3339, input.StartFrom) // parse start_from into time
 		if err != nil {
-			c.JSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
+			c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
 			return
 		}
 		query.SetStartFrom(startFrom)
@@ -96,10 +96,10 @@ func (*Plan) Update(c *gin.Context) {
 	// save the plan
 	result, err := query.Save(c)
 	if ent.IsNotFound(err) {
-		c.JSON(http.StatusNotFound, model.ErrorResponse{Type: model.ErrorPlanNotFound, Error: "plan not found"})
+		c.AbortWithStatusJSON(http.StatusNotFound, model.ErrorResponse{Type: model.ErrorPlanNotFound, Error: "plan not found"})
 		return
 	} else if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to update plan", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to update plan", Detail: err.Error()})
 		return
 	}
 

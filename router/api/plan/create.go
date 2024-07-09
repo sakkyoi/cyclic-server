@@ -26,21 +26,21 @@ type Input struct {
 func (*Plan) Create(c *gin.Context) {
 	var input Input
 	if err := c.ShouldBind(&input); err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
 		return
 	}
 
 	// parse id from claims into uuid
 	hostID, err := uuid.Parse(c.MustGet("claims").(*magistrate.Claims).Subject)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid token", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid token", Detail: err.Error()})
 		return
 	}
 
 	// parse start_from into time
 	startFrom, err := time.Parse(time.RFC3339, input.StartFrom)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "start_from must be in RFC3339 format", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "start_from must be in RFC3339 format", Detail: err.Error()})
 		return
 	}
 
@@ -58,7 +58,7 @@ func (*Plan) Create(c *gin.Context) {
 		SetAutoNotify(*input.AutoNotify).
 		Save(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to create plan", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to create plan", Detail: err.Error()})
 		return
 	}
 

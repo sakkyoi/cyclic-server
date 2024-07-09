@@ -17,14 +17,14 @@ func (*Plan) Remove(c *gin.Context) {
 	// parse the plan id
 	id, err := uuid.Parse(c.Param("id")) // get the plan id from the path
 	if err != nil {
-		c.JSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
 		return
 	}
 
 	// parse id from claims into uuid
 	hostID, err := uuid.Parse(c.MustGet("claims").(*magistrate.Claims).Subject)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, model.ErrorResponse{Type: model.ErrorUnauthorized, Error: "invalid token", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Type: model.ErrorUnauthorized, Error: "invalid token", Detail: err.Error()})
 		return
 	}
 
@@ -34,10 +34,10 @@ func (*Plan) Remove(c *gin.Context) {
 		SetDeletedAt(time.Now()).
 		Save(c)
 	if ent.IsNotFound(err) {
-		c.JSON(http.StatusNotFound, model.ErrorResponse{Type: model.ErrorPlanNotFound, Error: "plan not found"})
+		c.AbortWithStatusJSON(http.StatusNotFound, model.ErrorResponse{Type: model.ErrorPlanNotFound, Error: "plan not found"})
 		return
 	} else if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to remove plan", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to remove plan", Detail: err.Error()})
 		return
 	}
 

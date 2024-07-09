@@ -15,7 +15,7 @@ func (*Plan) List(c *gin.Context) {
 	// parse id from claims into uuid
 	userId, err := uuid.Parse(c.MustGet("claims").(*magistrate.Claims).Subject)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, model.ErrorResponse{Type: model.ErrorUnauthorized, Error: "invalid token", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusUnauthorized, model.ErrorResponse{Type: model.ErrorUnauthorized, Error: "invalid token", Detail: err.Error()})
 		return
 	}
 
@@ -24,7 +24,7 @@ func (*Plan) List(c *gin.Context) {
 		Where(plan.HasHostWith(user.ID(userId)), plan.DeletedAtIsNil()).
 		All(c)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to list plans", Detail: err.Error()})
+		c.AbortWithStatusJSON(http.StatusInternalServerError, model.ErrorResponse{Type: model.ErrorInternal, Error: "failed to list plans", Detail: err.Error()})
 		return
 	}
 
