@@ -14,8 +14,8 @@ type Tx struct {
 	config
 	// Plan is the client for interacting with the Plan builders.
 	Plan *PlanClient
-	// Subscribe is the client for interacting with the Subscribe builders.
-	Subscribe *SubscribeClient
+	// Subscription is the client for interacting with the Subscription builders.
+	Subscription *SubscriptionClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -150,7 +150,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Plan = NewPlanClient(tx.config)
-	tx.Subscribe = NewSubscribeClient(tx.config)
+	tx.Subscription = NewSubscriptionClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

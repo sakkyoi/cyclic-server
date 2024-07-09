@@ -1,7 +1,7 @@
 package subscribe
 
 import (
-	"cyclic/ent/subscribe"
+	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 	"cyclic/pkg/magistrate"
 	"cyclic/pkg/secretary"
@@ -20,8 +20,8 @@ func (*Subscribe) List(c *gin.Context) {
 	}
 
 	// get subscriptions
-	subscriptions, err := secretary.Minute.Subscribe.Query().
-		Where(subscribe.HasUserWith(user.ID(id))).
+	subscriptions, err := secretary.Minute.Subscription.Query().
+		Where(subscription.HasUserWith(user.ID(id))).
 		WithPlan().
 		All(c)
 	if err != nil {

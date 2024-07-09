@@ -54,10 +54,10 @@ const (
 	// HostColumn is the table column denoting the host relation/edge.
 	HostColumn = "user_plans"
 	// SubscriptionsTable is the table that holds the subscriptions relation/edge.
-	SubscriptionsTable = "subscribes"
-	// SubscriptionsInverseTable is the table name for the Subscribe entity.
-	// It exists in this package in order to avoid circular dependency with the "subscribe" package.
-	SubscriptionsInverseTable = "subscribes"
+	SubscriptionsTable = "subscriptions"
+	// SubscriptionsInverseTable is the table name for the Subscription entity.
+	// It exists in this package in order to avoid circular dependency with the "subscription" package.
+	SubscriptionsInverseTable = "subscriptions"
 	// SubscriptionsColumn is the table column denoting the subscriptions relation/edge.
 	SubscriptionsColumn = "plan_subscriptions"
 )

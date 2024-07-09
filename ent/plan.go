@@ -55,7 +55,7 @@ type PlanEdges struct {
 	// Host holds the value of the host edge.
 	Host *User `json:"host,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
-	Subscriptions []*Subscribe `json:"subscriptions,omitempty"`
+	Subscriptions []*Subscription `json:"subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -74,7 +74,7 @@ func (e PlanEdges) HostOrErr() (*User, error) {
 
 // SubscriptionsOrErr returns the Subscriptions value or an error if the edge
 // was not loaded in eager-loading.
-func (e PlanEdges) SubscriptionsOrErr() ([]*Subscribe, error) {
+func (e PlanEdges) SubscriptionsOrErr() ([]*Subscription, error) {
 	if e.loadedTypes[1] {
 		return e.Subscriptions, nil
 	}
@@ -219,7 +219,7 @@ func (pl *Plan) QueryHost() *UserQuery {
 }
 
 // QuerySubscriptions queries the "subscriptions" edge of the Plan entity.
-func (pl *Plan) QuerySubscriptions() *SubscribeQuery {
+func (pl *Plan) QuerySubscriptions() *SubscriptionQuery {
 	return NewPlanClient(pl.config).QuerySubscriptions(pl)
 }
 

@@ -6,7 +6,7 @@ import (
 	"context"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
-	"cyclic/ent/subscribe"
+	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 	"errors"
 	"fmt"
@@ -214,14 +214,14 @@ func (pu *PlanUpdate) SetHost(u *User) *PlanUpdate {
 	return pu.SetHostID(u.ID)
 }
 
-// AddSubscriptionIDs adds the "subscriptions" edge to the Subscribe entity by IDs.
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscription entity by IDs.
 func (pu *PlanUpdate) AddSubscriptionIDs(ids ...uuid.UUID) *PlanUpdate {
 	pu.mutation.AddSubscriptionIDs(ids...)
 	return pu
 }
 
-// AddSubscriptions adds the "subscriptions" edges to the Subscribe entity.
-func (pu *PlanUpdate) AddSubscriptions(s ...*Subscribe) *PlanUpdate {
+// AddSubscriptions adds the "subscriptions" edges to the Subscription entity.
+func (pu *PlanUpdate) AddSubscriptions(s ...*Subscription) *PlanUpdate {
 	ids := make([]uuid.UUID, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
@@ -240,20 +240,20 @@ func (pu *PlanUpdate) ClearHost() *PlanUpdate {
 	return pu
 }
 
-// ClearSubscriptions clears all "subscriptions" edges to the Subscribe entity.
+// ClearSubscriptions clears all "subscriptions" edges to the Subscription entity.
 func (pu *PlanUpdate) ClearSubscriptions() *PlanUpdate {
 	pu.mutation.ClearSubscriptions()
 	return pu
 }
 
-// RemoveSubscriptionIDs removes the "subscriptions" edge to Subscribe entities by IDs.
+// RemoveSubscriptionIDs removes the "subscriptions" edge to Subscription entities by IDs.
 func (pu *PlanUpdate) RemoveSubscriptionIDs(ids ...uuid.UUID) *PlanUpdate {
 	pu.mutation.RemoveSubscriptionIDs(ids...)
 	return pu
 }
 
-// RemoveSubscriptions removes "subscriptions" edges to Subscribe entities.
-func (pu *PlanUpdate) RemoveSubscriptions(s ...*Subscribe) *PlanUpdate {
+// RemoveSubscriptions removes "subscriptions" edges to Subscription entities.
+func (pu *PlanUpdate) RemoveSubscriptions(s ...*Subscription) *PlanUpdate {
 	ids := make([]uuid.UUID, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
@@ -404,7 +404,7 @@ func (pu *PlanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{plan.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -417,7 +417,7 @@ func (pu *PlanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{plan.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -433,7 +433,7 @@ func (pu *PlanUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Columns: []string{plan.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -644,14 +644,14 @@ func (puo *PlanUpdateOne) SetHost(u *User) *PlanUpdateOne {
 	return puo.SetHostID(u.ID)
 }
 
-// AddSubscriptionIDs adds the "subscriptions" edge to the Subscribe entity by IDs.
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscription entity by IDs.
 func (puo *PlanUpdateOne) AddSubscriptionIDs(ids ...uuid.UUID) *PlanUpdateOne {
 	puo.mutation.AddSubscriptionIDs(ids...)
 	return puo
 }
 
-// AddSubscriptions adds the "subscriptions" edges to the Subscribe entity.
-func (puo *PlanUpdateOne) AddSubscriptions(s ...*Subscribe) *PlanUpdateOne {
+// AddSubscriptions adds the "subscriptions" edges to the Subscription entity.
+func (puo *PlanUpdateOne) AddSubscriptions(s ...*Subscription) *PlanUpdateOne {
 	ids := make([]uuid.UUID, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
@@ -670,20 +670,20 @@ func (puo *PlanUpdateOne) ClearHost() *PlanUpdateOne {
 	return puo
 }
 
-// ClearSubscriptions clears all "subscriptions" edges to the Subscribe entity.
+// ClearSubscriptions clears all "subscriptions" edges to the Subscription entity.
 func (puo *PlanUpdateOne) ClearSubscriptions() *PlanUpdateOne {
 	puo.mutation.ClearSubscriptions()
 	return puo
 }
 
-// RemoveSubscriptionIDs removes the "subscriptions" edge to Subscribe entities by IDs.
+// RemoveSubscriptionIDs removes the "subscriptions" edge to Subscription entities by IDs.
 func (puo *PlanUpdateOne) RemoveSubscriptionIDs(ids ...uuid.UUID) *PlanUpdateOne {
 	puo.mutation.RemoveSubscriptionIDs(ids...)
 	return puo
 }
 
-// RemoveSubscriptions removes "subscriptions" edges to Subscribe entities.
-func (puo *PlanUpdateOne) RemoveSubscriptions(s ...*Subscribe) *PlanUpdateOne {
+// RemoveSubscriptions removes "subscriptions" edges to Subscription entities.
+func (puo *PlanUpdateOne) RemoveSubscriptions(s ...*Subscription) *PlanUpdateOne {
 	ids := make([]uuid.UUID, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
@@ -864,7 +864,7 @@ func (puo *PlanUpdateOne) sqlSave(ctx context.Context) (_node *Plan, err error) 
 			Columns: []string{plan.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID),
 			},
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
@@ -877,7 +877,7 @@ func (puo *PlanUpdateOne) sqlSave(ctx context.Context) (_node *Plan, err error) 
 			Columns: []string{plan.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -893,7 +893,7 @@ func (puo *PlanUpdateOne) sqlSave(ctx context.Context) (_node *Plan, err error) 
 			Columns: []string{plan.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

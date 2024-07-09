@@ -5,33 +5,33 @@ package ent
 import (
 	"context"
 	"cyclic/ent/predicate"
-	"cyclic/ent/subscribe"
+	"cyclic/ent/subscription"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 )
 
-// SubscribeDelete is the builder for deleting a Subscribe entity.
-type SubscribeDelete struct {
+// SubscriptionDelete is the builder for deleting a Subscription entity.
+type SubscriptionDelete struct {
 	config
 	hooks    []Hook
-	mutation *SubscribeMutation
+	mutation *SubscriptionMutation
 }
 
-// Where appends a list predicates to the SubscribeDelete builder.
-func (sd *SubscribeDelete) Where(ps ...predicate.Subscribe) *SubscribeDelete {
+// Where appends a list predicates to the SubscriptionDelete builder.
+func (sd *SubscriptionDelete) Where(ps ...predicate.Subscription) *SubscriptionDelete {
 	sd.mutation.Where(ps...)
 	return sd
 }
 
 // Exec executes the deletion query and returns how many vertices were deleted.
-func (sd *SubscribeDelete) Exec(ctx context.Context) (int, error) {
+func (sd *SubscriptionDelete) Exec(ctx context.Context) (int, error) {
 	return withHooks(ctx, sd.sqlExec, sd.mutation, sd.hooks)
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (sd *SubscribeDelete) ExecX(ctx context.Context) int {
+func (sd *SubscriptionDelete) ExecX(ctx context.Context) int {
 	n, err := sd.Exec(ctx)
 	if err != nil {
 		panic(err)
@@ -39,8 +39,8 @@ func (sd *SubscribeDelete) ExecX(ctx context.Context) int {
 	return n
 }
 
-func (sd *SubscribeDelete) sqlExec(ctx context.Context) (int, error) {
-	_spec := sqlgraph.NewDeleteSpec(subscribe.Table, sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID))
+func (sd *SubscriptionDelete) sqlExec(ctx context.Context) (int, error) {
+	_spec := sqlgraph.NewDeleteSpec(subscription.Table, sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID))
 	if ps := sd.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
 			for i := range ps {
@@ -56,32 +56,32 @@ func (sd *SubscribeDelete) sqlExec(ctx context.Context) (int, error) {
 	return affected, err
 }
 
-// SubscribeDeleteOne is the builder for deleting a single Subscribe entity.
-type SubscribeDeleteOne struct {
-	sd *SubscribeDelete
+// SubscriptionDeleteOne is the builder for deleting a single Subscription entity.
+type SubscriptionDeleteOne struct {
+	sd *SubscriptionDelete
 }
 
-// Where appends a list predicates to the SubscribeDelete builder.
-func (sdo *SubscribeDeleteOne) Where(ps ...predicate.Subscribe) *SubscribeDeleteOne {
+// Where appends a list predicates to the SubscriptionDelete builder.
+func (sdo *SubscriptionDeleteOne) Where(ps ...predicate.Subscription) *SubscriptionDeleteOne {
 	sdo.sd.mutation.Where(ps...)
 	return sdo
 }
 
 // Exec executes the deletion query.
-func (sdo *SubscribeDeleteOne) Exec(ctx context.Context) error {
+func (sdo *SubscriptionDeleteOne) Exec(ctx context.Context) error {
 	n, err := sdo.sd.Exec(ctx)
 	switch {
 	case err != nil:
 		return err
 	case n == 0:
-		return &NotFoundError{subscribe.Label}
+		return &NotFoundError{subscription.Label}
 	default:
 		return nil
 	}
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (sdo *SubscribeDeleteOne) ExecX(ctx context.Context) {
+func (sdo *SubscriptionDeleteOne) ExecX(ctx context.Context) {
 	if err := sdo.Exec(ctx); err != nil {
 		panic(err)
 	}

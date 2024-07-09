@@ -641,7 +641,7 @@ func HasSubscriptions() predicate.Plan {
 }
 
 // HasSubscriptionsWith applies the HasEdge predicate on the "subscriptions" edge with a given conditions (other predicates).
-func HasSubscriptionsWith(preds ...predicate.Subscribe) predicate.Plan {
+func HasSubscriptionsWith(preds ...predicate.Subscription) predicate.Plan {
 	return predicate.Plan(func(s *sql.Selector) {
 		step := newSubscriptionsStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {

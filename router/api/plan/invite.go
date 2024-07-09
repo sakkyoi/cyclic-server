@@ -80,7 +80,7 @@ func (*Plan) Invite(c *gin.Context) {
 	// invite the user to the plan
 	// the reason we don't use AddUserID is that we need to check if the user is existed.
 	// user already invited error are the same as user exists error (constraint error)
-	result, err := secretary.Minute.Subscribe.Create().
+	result, err := secretary.Minute.Subscription.Create().
 		SetPlan(p).
 		SetUser(u).
 		Save(c)

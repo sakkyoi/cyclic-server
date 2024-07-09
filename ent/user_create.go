@@ -5,7 +5,7 @@ package ent
 import (
 	"context"
 	"cyclic/ent/plan"
-	"cyclic/ent/subscribe"
+	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 	"errors"
 	"fmt"
@@ -127,14 +127,14 @@ func (uc *UserCreate) AddPlans(p ...*Plan) *UserCreate {
 	return uc.AddPlanIDs(ids...)
 }
 
-// AddSubscriptionIDs adds the "subscriptions" edge to the Subscribe entity by IDs.
+// AddSubscriptionIDs adds the "subscriptions" edge to the Subscription entity by IDs.
 func (uc *UserCreate) AddSubscriptionIDs(ids ...uuid.UUID) *UserCreate {
 	uc.mutation.AddSubscriptionIDs(ids...)
 	return uc
 }
 
-// AddSubscriptions adds the "subscriptions" edges to the Subscribe entity.
-func (uc *UserCreate) AddSubscriptions(s ...*Subscribe) *UserCreate {
+// AddSubscriptions adds the "subscriptions" edges to the Subscription entity.
+func (uc *UserCreate) AddSubscriptions(s ...*Subscription) *UserCreate {
 	ids := make([]uuid.UUID, len(s))
 	for i := range s {
 		ids[i] = s[i].ID
@@ -294,7 +294,7 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Columns: []string{user.SubscriptionsColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID),
+				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

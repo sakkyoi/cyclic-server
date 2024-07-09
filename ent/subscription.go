@@ -4,7 +4,7 @@ package ent
 
 import (
 	"cyclic/ent/plan"
-	"cyclic/ent/subscribe"
+	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 	"fmt"
 	"strings"
@@ -15,8 +15,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// Subscribe is the model entity for the Subscribe schema.
-type Subscribe struct {
+// Subscription is the model entity for the Subscription schema.
+type Subscription struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
@@ -27,15 +27,15 @@ type Subscribe struct {
 	// LeftAt holds the value of the "left_at" field.
 	LeftAt time.Time `json:"left_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
-	// The values are being populated by the SubscribeQuery when eager-loading is set.
-	Edges              SubscribeEdges `json:"edges"`
+	// The values are being populated by the SubscriptionQuery when eager-loading is set.
+	Edges              SubscriptionEdges `json:"edges"`
 	plan_subscriptions *uuid.UUID
 	user_subscriptions *uuid.UUID
 	selectValues       sql.SelectValues
 }
 
-// SubscribeEdges holds the relations/edges for other nodes in the graph.
-type SubscribeEdges struct {
+// SubscriptionEdges holds the relations/edges for other nodes in the graph.
+type SubscriptionEdges struct {
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
 	// Plan holds the value of the plan edge.
@@ -47,7 +47,7 @@ type SubscribeEdges struct {
 
 // UserOrErr returns the User value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e SubscribeEdges) UserOrErr() (*User, error) {
+func (e SubscriptionEdges) UserOrErr() (*User, error) {
 	if e.User != nil {
 		return e.User, nil
 	} else if e.loadedTypes[0] {
@@ -58,7 +58,7 @@ func (e SubscribeEdges) UserOrErr() (*User, error) {
 
 // PlanOrErr returns the Plan value or an error if the edge
 // was not loaded in eager-loading, or loaded but was not found.
-func (e SubscribeEdges) PlanOrErr() (*Plan, error) {
+func (e SubscriptionEdges) PlanOrErr() (*Plan, error) {
 	if e.Plan != nil {
 		return e.Plan, nil
 	} else if e.loadedTypes[1] {
@@ -68,17 +68,17 @@ func (e SubscribeEdges) PlanOrErr() (*Plan, error) {
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
-func (*Subscribe) scanValues(columns []string) ([]any, error) {
+func (*Subscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case subscribe.FieldCreatedAt, subscribe.FieldSubscribedAt, subscribe.FieldLeftAt:
+		case subscription.FieldCreatedAt, subscription.FieldSubscribedAt, subscription.FieldLeftAt:
 			values[i] = new(sql.NullTime)
-		case subscribe.FieldID:
+		case subscription.FieldID:
 			values[i] = new(uuid.UUID)
-		case subscribe.ForeignKeys[0]: // plan_subscriptions
+		case subscription.ForeignKeys[0]: // plan_subscriptions
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case subscribe.ForeignKeys[1]: // user_subscriptions
+		case subscription.ForeignKeys[1]: // user_subscriptions
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -88,45 +88,45 @@ func (*Subscribe) scanValues(columns []string) ([]any, error) {
 }
 
 // assignValues assigns the values that were returned from sql.Rows (after scanning)
-// to the Subscribe fields.
-func (s *Subscribe) assignValues(columns []string, values []any) error {
+// to the Subscription fields.
+func (s *Subscription) assignValues(columns []string, values []any) error {
 	if m, n := len(values), len(columns); m < n {
 		return fmt.Errorf("mismatch number of scan values: %d != %d", m, n)
 	}
 	for i := range columns {
 		switch columns[i] {
-		case subscribe.FieldID:
+		case subscription.FieldID:
 			if value, ok := values[i].(*uuid.UUID); !ok {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				s.ID = *value
 			}
-		case subscribe.FieldCreatedAt:
+		case subscription.FieldCreatedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field created_at", values[i])
 			} else if value.Valid {
 				s.CreatedAt = value.Time
 			}
-		case subscribe.FieldSubscribedAt:
+		case subscription.FieldSubscribedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field subscribed_at", values[i])
 			} else if value.Valid {
 				s.SubscribedAt = value.Time
 			}
-		case subscribe.FieldLeftAt:
+		case subscription.FieldLeftAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field left_at", values[i])
 			} else if value.Valid {
 				s.LeftAt = value.Time
 			}
-		case subscribe.ForeignKeys[0]:
+		case subscription.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field plan_subscriptions", values[i])
 			} else if value.Valid {
 				s.plan_subscriptions = new(uuid.UUID)
 				*s.plan_subscriptions = *value.S.(*uuid.UUID)
 			}
-		case subscribe.ForeignKeys[1]:
+		case subscription.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field user_subscriptions", values[i])
 			} else if value.Valid {
@@ -140,44 +140,44 @@ func (s *Subscribe) assignValues(columns []string, values []any) error {
 	return nil
 }
 
-// Value returns the ent.Value that was dynamically selected and assigned to the Subscribe.
+// Value returns the ent.Value that was dynamically selected and assigned to the Subscription.
 // This includes values selected through modifiers, order, etc.
-func (s *Subscribe) Value(name string) (ent.Value, error) {
+func (s *Subscription) Value(name string) (ent.Value, error) {
 	return s.selectValues.Get(name)
 }
 
-// QueryUser queries the "user" edge of the Subscribe entity.
-func (s *Subscribe) QueryUser() *UserQuery {
-	return NewSubscribeClient(s.config).QueryUser(s)
+// QueryUser queries the "user" edge of the Subscription entity.
+func (s *Subscription) QueryUser() *UserQuery {
+	return NewSubscriptionClient(s.config).QueryUser(s)
 }
 
-// QueryPlan queries the "plan" edge of the Subscribe entity.
-func (s *Subscribe) QueryPlan() *PlanQuery {
-	return NewSubscribeClient(s.config).QueryPlan(s)
+// QueryPlan queries the "plan" edge of the Subscription entity.
+func (s *Subscription) QueryPlan() *PlanQuery {
+	return NewSubscriptionClient(s.config).QueryPlan(s)
 }
 
-// Update returns a builder for updating this Subscribe.
-// Note that you need to call Subscribe.Unwrap() before calling this method if this Subscribe
+// Update returns a builder for updating this Subscription.
+// Note that you need to call Subscription.Unwrap() before calling this method if this Subscription
 // was returned from a transaction, and the transaction was committed or rolled back.
-func (s *Subscribe) Update() *SubscribeUpdateOne {
-	return NewSubscribeClient(s.config).UpdateOne(s)
+func (s *Subscription) Update() *SubscriptionUpdateOne {
+	return NewSubscriptionClient(s.config).UpdateOne(s)
 }
 
-// Unwrap unwraps the Subscribe entity that was returned from a transaction after it was closed,
+// Unwrap unwraps the Subscription entity that was returned from a transaction after it was closed,
 // so that all future queries will be executed through the driver which created the transaction.
-func (s *Subscribe) Unwrap() *Subscribe {
+func (s *Subscription) Unwrap() *Subscription {
 	_tx, ok := s.config.driver.(*txDriver)
 	if !ok {
-		panic("ent: Subscribe is not a transactional entity")
+		panic("ent: Subscription is not a transactional entity")
 	}
 	s.config.driver = _tx.drv
 	return s
 }
 
 // String implements the fmt.Stringer.
-func (s *Subscribe) String() string {
+func (s *Subscription) String() string {
 	var builder strings.Builder
-	builder.WriteString("Subscribe(")
+	builder.WriteString("Subscription(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", s.ID))
 	builder.WriteString("created_at=")
 	builder.WriteString(s.CreatedAt.Format(time.ANSIC))
@@ -191,5 +191,5 @@ func (s *Subscribe) String() string {
 	return builder.String()
 }
 
-// Subscribes is a parsable slice of Subscribe.
-type Subscribes []*Subscribe
+// Subscriptions is a parsable slice of Subscription.
+type Subscriptions []*Subscription

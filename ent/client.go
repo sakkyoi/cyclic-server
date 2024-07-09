@@ -12,7 +12,7 @@ import (
 	"cyclic/ent/migrate"
 
 	"cyclic/ent/plan"
-	"cyclic/ent/subscribe"
+	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 
 	"entgo.io/ent"
@@ -29,8 +29,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Plan is the client for interacting with the Plan builders.
 	Plan *PlanClient
-	// Subscribe is the client for interacting with the Subscribe builders.
-	Subscribe *SubscribeClient
+	// Subscription is the client for interacting with the Subscription builders.
+	Subscription *SubscriptionClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -45,7 +45,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Plan = NewPlanClient(c.config)
-	c.Subscribe = NewSubscribeClient(c.config)
+	c.Subscription = NewSubscriptionClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -137,11 +137,11 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:       ctx,
-		config:    cfg,
-		Plan:      NewPlanClient(cfg),
-		Subscribe: NewSubscribeClient(cfg),
-		User:      NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		Plan:         NewPlanClient(cfg),
+		Subscription: NewSubscriptionClient(cfg),
+		User:         NewUserClient(cfg),
 	}, nil
 }
 
@@ -159,11 +159,11 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:       ctx,
-		config:    cfg,
-		Plan:      NewPlanClient(cfg),
-		Subscribe: NewSubscribeClient(cfg),
-		User:      NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		Plan:         NewPlanClient(cfg),
+		Subscription: NewSubscriptionClient(cfg),
+		User:         NewUserClient(cfg),
 	}, nil
 }
 
@@ -193,7 +193,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Plan.Use(hooks...)
-	c.Subscribe.Use(hooks...)
+	c.Subscription.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
@@ -201,7 +201,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Plan.Intercept(interceptors...)
-	c.Subscribe.Intercept(interceptors...)
+	c.Subscription.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
 }
 
@@ -210,8 +210,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *PlanMutation:
 		return c.Plan.mutate(ctx, m)
-	case *SubscribeMutation:
-		return c.Subscribe.mutate(ctx, m)
+	case *SubscriptionMutation:
+		return c.Subscription.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -344,13 +344,13 @@ func (c *PlanClient) QueryHost(pl *Plan) *UserQuery {
 }
 
 // QuerySubscriptions queries the subscriptions edge of a Plan.
-func (c *PlanClient) QuerySubscriptions(pl *Plan) *SubscribeQuery {
-	query := (&SubscribeClient{config: c.config}).Query()
+func (c *PlanClient) QuerySubscriptions(pl *Plan) *SubscriptionQuery {
+	query := (&SubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := pl.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(plan.Table, plan.FieldID, id),
-			sqlgraph.To(subscribe.Table, subscribe.FieldID),
+			sqlgraph.To(subscription.Table, subscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, plan.SubscriptionsTable, plan.SubscriptionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(pl.driver.Dialect(), step)
@@ -384,107 +384,107 @@ func (c *PlanClient) mutate(ctx context.Context, m *PlanMutation) (Value, error)
 	}
 }
 
-// SubscribeClient is a client for the Subscribe schema.
-type SubscribeClient struct {
+// SubscriptionClient is a client for the Subscription schema.
+type SubscriptionClient struct {
 	config
 }
 
-// NewSubscribeClient returns a client for the Subscribe from the given config.
-func NewSubscribeClient(c config) *SubscribeClient {
-	return &SubscribeClient{config: c}
+// NewSubscriptionClient returns a client for the Subscription from the given config.
+func NewSubscriptionClient(c config) *SubscriptionClient {
+	return &SubscriptionClient{config: c}
 }
 
 // Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `subscribe.Hooks(f(g(h())))`.
-func (c *SubscribeClient) Use(hooks ...Hook) {
-	c.hooks.Subscribe = append(c.hooks.Subscribe, hooks...)
+// A call to `Use(f, g, h)` equals to `subscription.Hooks(f(g(h())))`.
+func (c *SubscriptionClient) Use(hooks ...Hook) {
+	c.hooks.Subscription = append(c.hooks.Subscription, hooks...)
 }
 
 // Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `subscribe.Intercept(f(g(h())))`.
-func (c *SubscribeClient) Intercept(interceptors ...Interceptor) {
-	c.inters.Subscribe = append(c.inters.Subscribe, interceptors...)
+// A call to `Intercept(f, g, h)` equals to `subscription.Intercept(f(g(h())))`.
+func (c *SubscriptionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Subscription = append(c.inters.Subscription, interceptors...)
 }
 
-// Create returns a builder for creating a Subscribe entity.
-func (c *SubscribeClient) Create() *SubscribeCreate {
-	mutation := newSubscribeMutation(c.config, OpCreate)
-	return &SubscribeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Create returns a builder for creating a Subscription entity.
+func (c *SubscriptionClient) Create() *SubscriptionCreate {
+	mutation := newSubscriptionMutation(c.config, OpCreate)
+	return &SubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// CreateBulk returns a builder for creating a bulk of Subscribe entities.
-func (c *SubscribeClient) CreateBulk(builders ...*SubscribeCreate) *SubscribeCreateBulk {
-	return &SubscribeCreateBulk{config: c.config, builders: builders}
+// CreateBulk returns a builder for creating a bulk of Subscription entities.
+func (c *SubscriptionClient) CreateBulk(builders ...*SubscriptionCreate) *SubscriptionCreateBulk {
+	return &SubscriptionCreateBulk{config: c.config, builders: builders}
 }
 
 // MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
 // a builder and applies setFunc on it.
-func (c *SubscribeClient) MapCreateBulk(slice any, setFunc func(*SubscribeCreate, int)) *SubscribeCreateBulk {
+func (c *SubscriptionClient) MapCreateBulk(slice any, setFunc func(*SubscriptionCreate, int)) *SubscriptionCreateBulk {
 	rv := reflect.ValueOf(slice)
 	if rv.Kind() != reflect.Slice {
-		return &SubscribeCreateBulk{err: fmt.Errorf("calling to SubscribeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+		return &SubscriptionCreateBulk{err: fmt.Errorf("calling to SubscriptionClient.MapCreateBulk with wrong type %T, need slice", slice)}
 	}
-	builders := make([]*SubscribeCreate, rv.Len())
+	builders := make([]*SubscriptionCreate, rv.Len())
 	for i := 0; i < rv.Len(); i++ {
 		builders[i] = c.Create()
 		setFunc(builders[i], i)
 	}
-	return &SubscribeCreateBulk{config: c.config, builders: builders}
+	return &SubscriptionCreateBulk{config: c.config, builders: builders}
 }
 
-// Update returns an update builder for Subscribe.
-func (c *SubscribeClient) Update() *SubscribeUpdate {
-	mutation := newSubscribeMutation(c.config, OpUpdate)
-	return &SubscribeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Update returns an update builder for Subscription.
+func (c *SubscriptionClient) Update() *SubscriptionUpdate {
+	mutation := newSubscriptionMutation(c.config, OpUpdate)
+	return &SubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOne returns an update builder for the given entity.
-func (c *SubscribeClient) UpdateOne(s *Subscribe) *SubscribeUpdateOne {
-	mutation := newSubscribeMutation(c.config, OpUpdateOne, withSubscribe(s))
-	return &SubscribeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *SubscriptionClient) UpdateOne(s *Subscription) *SubscriptionUpdateOne {
+	mutation := newSubscriptionMutation(c.config, OpUpdateOne, withSubscription(s))
+	return &SubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // UpdateOneID returns an update builder for the given id.
-func (c *SubscribeClient) UpdateOneID(id uuid.UUID) *SubscribeUpdateOne {
-	mutation := newSubscribeMutation(c.config, OpUpdateOne, withSubscribeID(id))
-	return &SubscribeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+func (c *SubscriptionClient) UpdateOneID(id uuid.UUID) *SubscriptionUpdateOne {
+	mutation := newSubscriptionMutation(c.config, OpUpdateOne, withSubscriptionID(id))
+	return &SubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
-// Delete returns a delete builder for Subscribe.
-func (c *SubscribeClient) Delete() *SubscribeDelete {
-	mutation := newSubscribeMutation(c.config, OpDelete)
-	return &SubscribeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+// Delete returns a delete builder for Subscription.
+func (c *SubscriptionClient) Delete() *SubscriptionDelete {
+	mutation := newSubscriptionMutation(c.config, OpDelete)
+	return &SubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
 }
 
 // DeleteOne returns a builder for deleting the given entity.
-func (c *SubscribeClient) DeleteOne(s *Subscribe) *SubscribeDeleteOne {
+func (c *SubscriptionClient) DeleteOne(s *Subscription) *SubscriptionDeleteOne {
 	return c.DeleteOneID(s.ID)
 }
 
 // DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *SubscribeClient) DeleteOneID(id uuid.UUID) *SubscribeDeleteOne {
-	builder := c.Delete().Where(subscribe.ID(id))
+func (c *SubscriptionClient) DeleteOneID(id uuid.UUID) *SubscriptionDeleteOne {
+	builder := c.Delete().Where(subscription.ID(id))
 	builder.mutation.id = &id
 	builder.mutation.op = OpDeleteOne
-	return &SubscribeDeleteOne{builder}
+	return &SubscriptionDeleteOne{builder}
 }
 
-// Query returns a query builder for Subscribe.
-func (c *SubscribeClient) Query() *SubscribeQuery {
-	return &SubscribeQuery{
+// Query returns a query builder for Subscription.
+func (c *SubscriptionClient) Query() *SubscriptionQuery {
+	return &SubscriptionQuery{
 		config: c.config,
-		ctx:    &QueryContext{Type: TypeSubscribe},
+		ctx:    &QueryContext{Type: TypeSubscription},
 		inters: c.Interceptors(),
 	}
 }
 
-// Get returns a Subscribe entity by its id.
-func (c *SubscribeClient) Get(ctx context.Context, id uuid.UUID) (*Subscribe, error) {
-	return c.Query().Where(subscribe.ID(id)).Only(ctx)
+// Get returns a Subscription entity by its id.
+func (c *SubscriptionClient) Get(ctx context.Context, id uuid.UUID) (*Subscription, error) {
+	return c.Query().Where(subscription.ID(id)).Only(ctx)
 }
 
 // GetX is like Get, but panics if an error occurs.
-func (c *SubscribeClient) GetX(ctx context.Context, id uuid.UUID) *Subscribe {
+func (c *SubscriptionClient) GetX(ctx context.Context, id uuid.UUID) *Subscription {
 	obj, err := c.Get(ctx, id)
 	if err != nil {
 		panic(err)
@@ -492,15 +492,15 @@ func (c *SubscribeClient) GetX(ctx context.Context, id uuid.UUID) *Subscribe {
 	return obj
 }
 
-// QueryUser queries the user edge of a Subscribe.
-func (c *SubscribeClient) QueryUser(s *Subscribe) *UserQuery {
+// QueryUser queries the user edge of a Subscription.
+func (c *SubscriptionClient) QueryUser(s *Subscription) *UserQuery {
 	query := (&UserClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := s.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(subscribe.Table, subscribe.FieldID, id),
+			sqlgraph.From(subscription.Table, subscription.FieldID, id),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, subscribe.UserTable, subscribe.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscription.UserTable, subscription.UserColumn),
 		)
 		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
 		return fromV, nil
@@ -508,15 +508,15 @@ func (c *SubscribeClient) QueryUser(s *Subscribe) *UserQuery {
 	return query
 }
 
-// QueryPlan queries the plan edge of a Subscribe.
-func (c *SubscribeClient) QueryPlan(s *Subscribe) *PlanQuery {
+// QueryPlan queries the plan edge of a Subscription.
+func (c *SubscriptionClient) QueryPlan(s *Subscription) *PlanQuery {
 	query := (&PlanClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := s.ID
 		step := sqlgraph.NewStep(
-			sqlgraph.From(subscribe.Table, subscribe.FieldID, id),
+			sqlgraph.From(subscription.Table, subscription.FieldID, id),
 			sqlgraph.To(plan.Table, plan.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, subscribe.PlanTable, subscribe.PlanColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscription.PlanTable, subscription.PlanColumn),
 		)
 		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
 		return fromV, nil
@@ -525,27 +525,27 @@ func (c *SubscribeClient) QueryPlan(s *Subscribe) *PlanQuery {
 }
 
 // Hooks returns the client hooks.
-func (c *SubscribeClient) Hooks() []Hook {
-	return c.hooks.Subscribe
+func (c *SubscriptionClient) Hooks() []Hook {
+	return c.hooks.Subscription
 }
 
 // Interceptors returns the client interceptors.
-func (c *SubscribeClient) Interceptors() []Interceptor {
-	return c.inters.Subscribe
+func (c *SubscriptionClient) Interceptors() []Interceptor {
+	return c.inters.Subscription
 }
 
-func (c *SubscribeClient) mutate(ctx context.Context, m *SubscribeMutation) (Value, error) {
+func (c *SubscriptionClient) mutate(ctx context.Context, m *SubscriptionMutation) (Value, error) {
 	switch m.Op() {
 	case OpCreate:
-		return (&SubscribeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&SubscriptionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdate:
-		return (&SubscribeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&SubscriptionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpUpdateOne:
-		return (&SubscribeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+		return (&SubscriptionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
 	case OpDelete, OpDeleteOne:
-		return (&SubscribeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+		return (&SubscriptionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
-		return nil, fmt.Errorf("ent: unknown Subscribe mutation op: %q", m.Op())
+		return nil, fmt.Errorf("ent: unknown Subscription mutation op: %q", m.Op())
 	}
 }
 
@@ -674,13 +674,13 @@ func (c *UserClient) QueryPlans(u *User) *PlanQuery {
 }
 
 // QuerySubscriptions queries the subscriptions edge of a User.
-func (c *UserClient) QuerySubscriptions(u *User) *SubscribeQuery {
-	query := (&SubscribeClient{config: c.config}).Query()
+func (c *UserClient) QuerySubscriptions(u *User) *SubscriptionQuery {
+	query := (&SubscriptionClient{config: c.config}).Query()
 	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
 		id := u.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(subscribe.Table, subscribe.FieldID),
+			sqlgraph.To(subscription.Table, subscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.SubscriptionsTable, user.SubscriptionsColumn),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
@@ -717,9 +717,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Plan, Subscribe, User []ent.Hook
+		Plan, Subscription, User []ent.Hook
 	}
 	inters struct {
-		Plan, Subscribe, User []ent.Interceptor
+		Plan, Subscription, User []ent.Interceptor
 	}
 )

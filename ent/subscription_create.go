@@ -5,7 +5,7 @@ package ent
 import (
 	"context"
 	"cyclic/ent/plan"
-	"cyclic/ent/subscribe"
+	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 	"errors"
 	"fmt"
@@ -16,21 +16,21 @@ import (
 	"github.com/google/uuid"
 )
 
-// SubscribeCreate is the builder for creating a Subscribe entity.
-type SubscribeCreate struct {
+// SubscriptionCreate is the builder for creating a Subscription entity.
+type SubscriptionCreate struct {
 	config
-	mutation *SubscribeMutation
+	mutation *SubscriptionMutation
 	hooks    []Hook
 }
 
 // SetCreatedAt sets the "created_at" field.
-func (sc *SubscribeCreate) SetCreatedAt(t time.Time) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetCreatedAt(t time.Time) *SubscriptionCreate {
 	sc.mutation.SetCreatedAt(t)
 	return sc
 }
 
 // SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
-func (sc *SubscribeCreate) SetNillableCreatedAt(t *time.Time) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetNillableCreatedAt(t *time.Time) *SubscriptionCreate {
 	if t != nil {
 		sc.SetCreatedAt(*t)
 	}
@@ -38,13 +38,13 @@ func (sc *SubscribeCreate) SetNillableCreatedAt(t *time.Time) *SubscribeCreate {
 }
 
 // SetSubscribedAt sets the "subscribed_at" field.
-func (sc *SubscribeCreate) SetSubscribedAt(t time.Time) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetSubscribedAt(t time.Time) *SubscriptionCreate {
 	sc.mutation.SetSubscribedAt(t)
 	return sc
 }
 
 // SetNillableSubscribedAt sets the "subscribed_at" field if the given value is not nil.
-func (sc *SubscribeCreate) SetNillableSubscribedAt(t *time.Time) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetNillableSubscribedAt(t *time.Time) *SubscriptionCreate {
 	if t != nil {
 		sc.SetSubscribedAt(*t)
 	}
@@ -52,13 +52,13 @@ func (sc *SubscribeCreate) SetNillableSubscribedAt(t *time.Time) *SubscribeCreat
 }
 
 // SetLeftAt sets the "left_at" field.
-func (sc *SubscribeCreate) SetLeftAt(t time.Time) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetLeftAt(t time.Time) *SubscriptionCreate {
 	sc.mutation.SetLeftAt(t)
 	return sc
 }
 
 // SetNillableLeftAt sets the "left_at" field if the given value is not nil.
-func (sc *SubscribeCreate) SetNillableLeftAt(t *time.Time) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetNillableLeftAt(t *time.Time) *SubscriptionCreate {
 	if t != nil {
 		sc.SetLeftAt(*t)
 	}
@@ -66,13 +66,13 @@ func (sc *SubscribeCreate) SetNillableLeftAt(t *time.Time) *SubscribeCreate {
 }
 
 // SetID sets the "id" field.
-func (sc *SubscribeCreate) SetID(u uuid.UUID) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetID(u uuid.UUID) *SubscriptionCreate {
 	sc.mutation.SetID(u)
 	return sc
 }
 
 // SetNillableID sets the "id" field if the given value is not nil.
-func (sc *SubscribeCreate) SetNillableID(u *uuid.UUID) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetNillableID(u *uuid.UUID) *SubscriptionCreate {
 	if u != nil {
 		sc.SetID(*u)
 	}
@@ -80,40 +80,40 @@ func (sc *SubscribeCreate) SetNillableID(u *uuid.UUID) *SubscribeCreate {
 }
 
 // SetUserID sets the "user" edge to the User entity by ID.
-func (sc *SubscribeCreate) SetUserID(id uuid.UUID) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetUserID(id uuid.UUID) *SubscriptionCreate {
 	sc.mutation.SetUserID(id)
 	return sc
 }
 
 // SetUser sets the "user" edge to the User entity.
-func (sc *SubscribeCreate) SetUser(u *User) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetUser(u *User) *SubscriptionCreate {
 	return sc.SetUserID(u.ID)
 }
 
 // SetPlanID sets the "plan" edge to the Plan entity by ID.
-func (sc *SubscribeCreate) SetPlanID(id uuid.UUID) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetPlanID(id uuid.UUID) *SubscriptionCreate {
 	sc.mutation.SetPlanID(id)
 	return sc
 }
 
 // SetPlan sets the "plan" edge to the Plan entity.
-func (sc *SubscribeCreate) SetPlan(p *Plan) *SubscribeCreate {
+func (sc *SubscriptionCreate) SetPlan(p *Plan) *SubscriptionCreate {
 	return sc.SetPlanID(p.ID)
 }
 
-// Mutation returns the SubscribeMutation object of the builder.
-func (sc *SubscribeCreate) Mutation() *SubscribeMutation {
+// Mutation returns the SubscriptionMutation object of the builder.
+func (sc *SubscriptionCreate) Mutation() *SubscriptionMutation {
 	return sc.mutation
 }
 
-// Save creates the Subscribe in the database.
-func (sc *SubscribeCreate) Save(ctx context.Context) (*Subscribe, error) {
+// Save creates the Subscription in the database.
+func (sc *SubscriptionCreate) Save(ctx context.Context) (*Subscription, error) {
 	sc.defaults()
 	return withHooks(ctx, sc.sqlSave, sc.mutation, sc.hooks)
 }
 
 // SaveX calls Save and panics if Save returns an error.
-func (sc *SubscribeCreate) SaveX(ctx context.Context) *Subscribe {
+func (sc *SubscriptionCreate) SaveX(ctx context.Context) *Subscription {
 	v, err := sc.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -122,45 +122,45 @@ func (sc *SubscribeCreate) SaveX(ctx context.Context) *Subscribe {
 }
 
 // Exec executes the query.
-func (sc *SubscribeCreate) Exec(ctx context.Context) error {
+func (sc *SubscriptionCreate) Exec(ctx context.Context) error {
 	_, err := sc.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (sc *SubscribeCreate) ExecX(ctx context.Context) {
+func (sc *SubscriptionCreate) ExecX(ctx context.Context) {
 	if err := sc.Exec(ctx); err != nil {
 		panic(err)
 	}
 }
 
 // defaults sets the default values of the builder before save.
-func (sc *SubscribeCreate) defaults() {
+func (sc *SubscriptionCreate) defaults() {
 	if _, ok := sc.mutation.CreatedAt(); !ok {
-		v := subscribe.DefaultCreatedAt()
+		v := subscription.DefaultCreatedAt()
 		sc.mutation.SetCreatedAt(v)
 	}
 	if _, ok := sc.mutation.ID(); !ok {
-		v := subscribe.DefaultID()
+		v := subscription.DefaultID()
 		sc.mutation.SetID(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
-func (sc *SubscribeCreate) check() error {
+func (sc *SubscriptionCreate) check() error {
 	if _, ok := sc.mutation.CreatedAt(); !ok {
-		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Subscribe.created_at"`)}
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Subscription.created_at"`)}
 	}
 	if _, ok := sc.mutation.UserID(); !ok {
-		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Subscribe.user"`)}
+		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Subscription.user"`)}
 	}
 	if _, ok := sc.mutation.PlanID(); !ok {
-		return &ValidationError{Name: "plan", err: errors.New(`ent: missing required edge "Subscribe.plan"`)}
+		return &ValidationError{Name: "plan", err: errors.New(`ent: missing required edge "Subscription.plan"`)}
 	}
 	return nil
 }
 
-func (sc *SubscribeCreate) sqlSave(ctx context.Context) (*Subscribe, error) {
+func (sc *SubscriptionCreate) sqlSave(ctx context.Context) (*Subscription, error) {
 	if err := sc.check(); err != nil {
 		return nil, err
 	}
@@ -183,33 +183,33 @@ func (sc *SubscribeCreate) sqlSave(ctx context.Context) (*Subscribe, error) {
 	return _node, nil
 }
 
-func (sc *SubscribeCreate) createSpec() (*Subscribe, *sqlgraph.CreateSpec) {
+func (sc *SubscriptionCreate) createSpec() (*Subscription, *sqlgraph.CreateSpec) {
 	var (
-		_node = &Subscribe{config: sc.config}
-		_spec = sqlgraph.NewCreateSpec(subscribe.Table, sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID))
+		_node = &Subscription{config: sc.config}
+		_spec = sqlgraph.NewCreateSpec(subscription.Table, sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID))
 	)
 	if id, ok := sc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
 	}
 	if value, ok := sc.mutation.CreatedAt(); ok {
-		_spec.SetField(subscribe.FieldCreatedAt, field.TypeTime, value)
+		_spec.SetField(subscription.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
 	}
 	if value, ok := sc.mutation.SubscribedAt(); ok {
-		_spec.SetField(subscribe.FieldSubscribedAt, field.TypeTime, value)
+		_spec.SetField(subscription.FieldSubscribedAt, field.TypeTime, value)
 		_node.SubscribedAt = value
 	}
 	if value, ok := sc.mutation.LeftAt(); ok {
-		_spec.SetField(subscribe.FieldLeftAt, field.TypeTime, value)
+		_spec.SetField(subscription.FieldLeftAt, field.TypeTime, value)
 		_node.LeftAt = value
 	}
 	if nodes := sc.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   subscribe.UserTable,
-			Columns: []string{subscribe.UserColumn},
+			Table:   subscription.UserTable,
+			Columns: []string{subscription.UserColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeUUID),
@@ -225,8 +225,8 @@ func (sc *SubscribeCreate) createSpec() (*Subscribe, *sqlgraph.CreateSpec) {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
 			Inverse: true,
-			Table:   subscribe.PlanTable,
-			Columns: []string{subscribe.PlanColumn},
+			Table:   subscription.PlanTable,
+			Columns: []string{subscription.PlanColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(plan.FieldID, field.TypeUUID),
@@ -241,27 +241,27 @@ func (sc *SubscribeCreate) createSpec() (*Subscribe, *sqlgraph.CreateSpec) {
 	return _node, _spec
 }
 
-// SubscribeCreateBulk is the builder for creating many Subscribe entities in bulk.
-type SubscribeCreateBulk struct {
+// SubscriptionCreateBulk is the builder for creating many Subscription entities in bulk.
+type SubscriptionCreateBulk struct {
 	config
 	err      error
-	builders []*SubscribeCreate
+	builders []*SubscriptionCreate
 }
 
-// Save creates the Subscribe entities in the database.
-func (scb *SubscribeCreateBulk) Save(ctx context.Context) ([]*Subscribe, error) {
+// Save creates the Subscription entities in the database.
+func (scb *SubscriptionCreateBulk) Save(ctx context.Context) ([]*Subscription, error) {
 	if scb.err != nil {
 		return nil, scb.err
 	}
 	specs := make([]*sqlgraph.CreateSpec, len(scb.builders))
-	nodes := make([]*Subscribe, len(scb.builders))
+	nodes := make([]*Subscription, len(scb.builders))
 	mutators := make([]Mutator, len(scb.builders))
 	for i := range scb.builders {
 		func(i int, root context.Context) {
 			builder := scb.builders[i]
 			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
-				mutation, ok := m.(*SubscribeMutation)
+				mutation, ok := m.(*SubscriptionMutation)
 				if !ok {
 					return nil, fmt.Errorf("unexpected mutation type %T", m)
 				}
@@ -304,7 +304,7 @@ func (scb *SubscribeCreateBulk) Save(ctx context.Context) ([]*Subscribe, error) 
 }
 
 // SaveX is like Save, but panics if an error occurs.
-func (scb *SubscribeCreateBulk) SaveX(ctx context.Context) []*Subscribe {
+func (scb *SubscriptionCreateBulk) SaveX(ctx context.Context) []*Subscription {
 	v, err := scb.Save(ctx)
 	if err != nil {
 		panic(err)
@@ -313,13 +313,13 @@ func (scb *SubscribeCreateBulk) SaveX(ctx context.Context) []*Subscribe {
 }
 
 // Exec executes the query.
-func (scb *SubscribeCreateBulk) Exec(ctx context.Context) error {
+func (scb *SubscriptionCreateBulk) Exec(ctx context.Context) error {
 	_, err := scb.Save(ctx)
 	return err
 }
 
 // ExecX is like Exec, but panics if an error occurs.
-func (scb *SubscribeCreateBulk) ExecX(ctx context.Context) {
+func (scb *SubscriptionCreateBulk) ExecX(ctx context.Context) {
 	if err := scb.Exec(ctx); err != nil {
 		panic(err)
 	}

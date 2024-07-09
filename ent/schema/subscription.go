@@ -9,13 +9,13 @@ import (
 	"time"
 )
 
-// Subscribe holds the schema definition for the Subscribe entity.
-type Subscribe struct {
+// Subscription holds the schema definition for the Subscription entity.
+type Subscription struct {
 	ent.Schema
 }
 
-// Fields of the Subscribe.
-func (Subscribe) Fields() []ent.Field {
+// Fields of the Subscription.
+func (Subscription) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New),
@@ -29,8 +29,8 @@ func (Subscribe) Fields() []ent.Field {
 	}
 }
 
-// Edges of the Subscribe.
-func (Subscribe) Edges() []ent.Edge {
+// Edges of the Subscription.
+func (Subscription) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.From("user", User.Type).
 			Ref("subscriptions").
@@ -43,8 +43,8 @@ func (Subscribe) Edges() []ent.Edge {
 	}
 }
 
-// Indexes of the Subscribe.
-func (Subscribe) Indexes() []ent.Index {
+// Indexes of the Subscription.
+func (Subscription) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Edges("user", "plan").
 			Unique(),

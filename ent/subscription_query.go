@@ -6,7 +6,7 @@ import (
 	"context"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
-	"cyclic/ent/subscribe"
+	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 	"fmt"
 	"math"
@@ -17,13 +17,13 @@ import (
 	"github.com/google/uuid"
 )
 
-// SubscribeQuery is the builder for querying Subscribe entities.
-type SubscribeQuery struct {
+// SubscriptionQuery is the builder for querying Subscription entities.
+type SubscriptionQuery struct {
 	config
 	ctx        *QueryContext
-	order      []subscribe.OrderOption
+	order      []subscription.OrderOption
 	inters     []Interceptor
-	predicates []predicate.Subscribe
+	predicates []predicate.Subscription
 	withUser   *UserQuery
 	withPlan   *PlanQuery
 	withFKs    bool
@@ -32,39 +32,39 @@ type SubscribeQuery struct {
 	path func(context.Context) (*sql.Selector, error)
 }
 
-// Where adds a new predicate for the SubscribeQuery builder.
-func (sq *SubscribeQuery) Where(ps ...predicate.Subscribe) *SubscribeQuery {
+// Where adds a new predicate for the SubscriptionQuery builder.
+func (sq *SubscriptionQuery) Where(ps ...predicate.Subscription) *SubscriptionQuery {
 	sq.predicates = append(sq.predicates, ps...)
 	return sq
 }
 
 // Limit the number of records to be returned by this query.
-func (sq *SubscribeQuery) Limit(limit int) *SubscribeQuery {
+func (sq *SubscriptionQuery) Limit(limit int) *SubscriptionQuery {
 	sq.ctx.Limit = &limit
 	return sq
 }
 
 // Offset to start from.
-func (sq *SubscribeQuery) Offset(offset int) *SubscribeQuery {
+func (sq *SubscriptionQuery) Offset(offset int) *SubscriptionQuery {
 	sq.ctx.Offset = &offset
 	return sq
 }
 
 // Unique configures the query builder to filter duplicate records on query.
 // By default, unique is set to true, and can be disabled using this method.
-func (sq *SubscribeQuery) Unique(unique bool) *SubscribeQuery {
+func (sq *SubscriptionQuery) Unique(unique bool) *SubscriptionQuery {
 	sq.ctx.Unique = &unique
 	return sq
 }
 
 // Order specifies how the records should be ordered.
-func (sq *SubscribeQuery) Order(o ...subscribe.OrderOption) *SubscribeQuery {
+func (sq *SubscriptionQuery) Order(o ...subscription.OrderOption) *SubscriptionQuery {
 	sq.order = append(sq.order, o...)
 	return sq
 }
 
 // QueryUser chains the current query on the "user" edge.
-func (sq *SubscribeQuery) QueryUser() *UserQuery {
+func (sq *SubscriptionQuery) QueryUser() *UserQuery {
 	query := (&UserClient{config: sq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := sq.prepareQuery(ctx); err != nil {
@@ -75,9 +75,9 @@ func (sq *SubscribeQuery) QueryUser() *UserQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(subscribe.Table, subscribe.FieldID, selector),
+			sqlgraph.From(subscription.Table, subscription.FieldID, selector),
 			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, subscribe.UserTable, subscribe.UserColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscription.UserTable, subscription.UserColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
 		return fromU, nil
@@ -86,7 +86,7 @@ func (sq *SubscribeQuery) QueryUser() *UserQuery {
 }
 
 // QueryPlan chains the current query on the "plan" edge.
-func (sq *SubscribeQuery) QueryPlan() *PlanQuery {
+func (sq *SubscriptionQuery) QueryPlan() *PlanQuery {
 	query := (&PlanClient{config: sq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := sq.prepareQuery(ctx); err != nil {
@@ -97,9 +97,9 @@ func (sq *SubscribeQuery) QueryPlan() *PlanQuery {
 			return nil, err
 		}
 		step := sqlgraph.NewStep(
-			sqlgraph.From(subscribe.Table, subscribe.FieldID, selector),
+			sqlgraph.From(subscription.Table, subscription.FieldID, selector),
 			sqlgraph.To(plan.Table, plan.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, subscribe.PlanTable, subscribe.PlanColumn),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscription.PlanTable, subscription.PlanColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
 		return fromU, nil
@@ -107,21 +107,21 @@ func (sq *SubscribeQuery) QueryPlan() *PlanQuery {
 	return query
 }
 
-// First returns the first Subscribe entity from the query.
-// Returns a *NotFoundError when no Subscribe was found.
-func (sq *SubscribeQuery) First(ctx context.Context) (*Subscribe, error) {
+// First returns the first Subscription entity from the query.
+// Returns a *NotFoundError when no Subscription was found.
+func (sq *SubscriptionQuery) First(ctx context.Context) (*Subscription, error) {
 	nodes, err := sq.Limit(1).All(setContextOp(ctx, sq.ctx, "First"))
 	if err != nil {
 		return nil, err
 	}
 	if len(nodes) == 0 {
-		return nil, &NotFoundError{subscribe.Label}
+		return nil, &NotFoundError{subscription.Label}
 	}
 	return nodes[0], nil
 }
 
 // FirstX is like First, but panics if an error occurs.
-func (sq *SubscribeQuery) FirstX(ctx context.Context) *Subscribe {
+func (sq *SubscriptionQuery) FirstX(ctx context.Context) *Subscription {
 	node, err := sq.First(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -129,22 +129,22 @@ func (sq *SubscribeQuery) FirstX(ctx context.Context) *Subscribe {
 	return node
 }
 
-// FirstID returns the first Subscribe ID from the query.
-// Returns a *NotFoundError when no Subscribe ID was found.
-func (sq *SubscribeQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
+// FirstID returns the first Subscription ID from the query.
+// Returns a *NotFoundError when no Subscription ID was found.
+func (sq *SubscriptionQuery) FirstID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = sq.Limit(1).IDs(setContextOp(ctx, sq.ctx, "FirstID")); err != nil {
 		return
 	}
 	if len(ids) == 0 {
-		err = &NotFoundError{subscribe.Label}
+		err = &NotFoundError{subscription.Label}
 		return
 	}
 	return ids[0], nil
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (sq *SubscribeQuery) FirstIDX(ctx context.Context) uuid.UUID {
+func (sq *SubscriptionQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	id, err := sq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -152,10 +152,10 @@ func (sq *SubscribeQuery) FirstIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// Only returns a single Subscribe entity found by the query, ensuring it only returns one.
-// Returns a *NotSingularError when more than one Subscribe entity is found.
-// Returns a *NotFoundError when no Subscribe entities are found.
-func (sq *SubscribeQuery) Only(ctx context.Context) (*Subscribe, error) {
+// Only returns a single Subscription entity found by the query, ensuring it only returns one.
+// Returns a *NotSingularError when more than one Subscription entity is found.
+// Returns a *NotFoundError when no Subscription entities are found.
+func (sq *SubscriptionQuery) Only(ctx context.Context) (*Subscription, error) {
 	nodes, err := sq.Limit(2).All(setContextOp(ctx, sq.ctx, "Only"))
 	if err != nil {
 		return nil, err
@@ -164,14 +164,14 @@ func (sq *SubscribeQuery) Only(ctx context.Context) (*Subscribe, error) {
 	case 1:
 		return nodes[0], nil
 	case 0:
-		return nil, &NotFoundError{subscribe.Label}
+		return nil, &NotFoundError{subscription.Label}
 	default:
-		return nil, &NotSingularError{subscribe.Label}
+		return nil, &NotSingularError{subscription.Label}
 	}
 }
 
 // OnlyX is like Only, but panics if an error occurs.
-func (sq *SubscribeQuery) OnlyX(ctx context.Context) *Subscribe {
+func (sq *SubscriptionQuery) OnlyX(ctx context.Context) *Subscription {
 	node, err := sq.Only(ctx)
 	if err != nil {
 		panic(err)
@@ -179,10 +179,10 @@ func (sq *SubscribeQuery) OnlyX(ctx context.Context) *Subscribe {
 	return node
 }
 
-// OnlyID is like Only, but returns the only Subscribe ID in the query.
-// Returns a *NotSingularError when more than one Subscribe ID is found.
+// OnlyID is like Only, but returns the only Subscription ID in the query.
+// Returns a *NotSingularError when more than one Subscription ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (sq *SubscribeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
+func (sq *SubscriptionQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) {
 	var ids []uuid.UUID
 	if ids, err = sq.Limit(2).IDs(setContextOp(ctx, sq.ctx, "OnlyID")); err != nil {
 		return
@@ -191,15 +191,15 @@ func (sq *SubscribeQuery) OnlyID(ctx context.Context) (id uuid.UUID, err error) 
 	case 1:
 		id = ids[0]
 	case 0:
-		err = &NotFoundError{subscribe.Label}
+		err = &NotFoundError{subscription.Label}
 	default:
-		err = &NotSingularError{subscribe.Label}
+		err = &NotSingularError{subscription.Label}
 	}
 	return
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (sq *SubscribeQuery) OnlyIDX(ctx context.Context) uuid.UUID {
+func (sq *SubscriptionQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	id, err := sq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -207,18 +207,18 @@ func (sq *SubscribeQuery) OnlyIDX(ctx context.Context) uuid.UUID {
 	return id
 }
 
-// All executes the query and returns a list of Subscribes.
-func (sq *SubscribeQuery) All(ctx context.Context) ([]*Subscribe, error) {
+// All executes the query and returns a list of Subscriptions.
+func (sq *SubscriptionQuery) All(ctx context.Context) ([]*Subscription, error) {
 	ctx = setContextOp(ctx, sq.ctx, "All")
 	if err := sq.prepareQuery(ctx); err != nil {
 		return nil, err
 	}
-	qr := querierAll[[]*Subscribe, *SubscribeQuery]()
-	return withInterceptors[[]*Subscribe](ctx, sq, qr, sq.inters)
+	qr := querierAll[[]*Subscription, *SubscriptionQuery]()
+	return withInterceptors[[]*Subscription](ctx, sq, qr, sq.inters)
 }
 
 // AllX is like All, but panics if an error occurs.
-func (sq *SubscribeQuery) AllX(ctx context.Context) []*Subscribe {
+func (sq *SubscriptionQuery) AllX(ctx context.Context) []*Subscription {
 	nodes, err := sq.All(ctx)
 	if err != nil {
 		panic(err)
@@ -226,20 +226,20 @@ func (sq *SubscribeQuery) AllX(ctx context.Context) []*Subscribe {
 	return nodes
 }
 
-// IDs executes the query and returns a list of Subscribe IDs.
-func (sq *SubscribeQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
+// IDs executes the query and returns a list of Subscription IDs.
+func (sq *SubscriptionQuery) IDs(ctx context.Context) (ids []uuid.UUID, err error) {
 	if sq.ctx.Unique == nil && sq.path != nil {
 		sq.Unique(true)
 	}
 	ctx = setContextOp(ctx, sq.ctx, "IDs")
-	if err = sq.Select(subscribe.FieldID).Scan(ctx, &ids); err != nil {
+	if err = sq.Select(subscription.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
 	return ids, nil
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (sq *SubscribeQuery) IDsX(ctx context.Context) []uuid.UUID {
+func (sq *SubscriptionQuery) IDsX(ctx context.Context) []uuid.UUID {
 	ids, err := sq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -248,16 +248,16 @@ func (sq *SubscribeQuery) IDsX(ctx context.Context) []uuid.UUID {
 }
 
 // Count returns the count of the given query.
-func (sq *SubscribeQuery) Count(ctx context.Context) (int, error) {
+func (sq *SubscriptionQuery) Count(ctx context.Context) (int, error) {
 	ctx = setContextOp(ctx, sq.ctx, "Count")
 	if err := sq.prepareQuery(ctx); err != nil {
 		return 0, err
 	}
-	return withInterceptors[int](ctx, sq, querierCount[*SubscribeQuery](), sq.inters)
+	return withInterceptors[int](ctx, sq, querierCount[*SubscriptionQuery](), sq.inters)
 }
 
 // CountX is like Count, but panics if an error occurs.
-func (sq *SubscribeQuery) CountX(ctx context.Context) int {
+func (sq *SubscriptionQuery) CountX(ctx context.Context) int {
 	count, err := sq.Count(ctx)
 	if err != nil {
 		panic(err)
@@ -266,7 +266,7 @@ func (sq *SubscribeQuery) CountX(ctx context.Context) int {
 }
 
 // Exist returns true if the query has elements in the graph.
-func (sq *SubscribeQuery) Exist(ctx context.Context) (bool, error) {
+func (sq *SubscriptionQuery) Exist(ctx context.Context) (bool, error) {
 	ctx = setContextOp(ctx, sq.ctx, "Exist")
 	switch _, err := sq.FirstID(ctx); {
 	case IsNotFound(err):
@@ -279,7 +279,7 @@ func (sq *SubscribeQuery) Exist(ctx context.Context) (bool, error) {
 }
 
 // ExistX is like Exist, but panics if an error occurs.
-func (sq *SubscribeQuery) ExistX(ctx context.Context) bool {
+func (sq *SubscriptionQuery) ExistX(ctx context.Context) bool {
 	exist, err := sq.Exist(ctx)
 	if err != nil {
 		panic(err)
@@ -287,18 +287,18 @@ func (sq *SubscribeQuery) ExistX(ctx context.Context) bool {
 	return exist
 }
 
-// Clone returns a duplicate of the SubscribeQuery builder, including all associated steps. It can be
+// Clone returns a duplicate of the SubscriptionQuery builder, including all associated steps. It can be
 // used to prepare common query builders and use them differently after the clone is made.
-func (sq *SubscribeQuery) Clone() *SubscribeQuery {
+func (sq *SubscriptionQuery) Clone() *SubscriptionQuery {
 	if sq == nil {
 		return nil
 	}
-	return &SubscribeQuery{
+	return &SubscriptionQuery{
 		config:     sq.config,
 		ctx:        sq.ctx.Clone(),
-		order:      append([]subscribe.OrderOption{}, sq.order...),
+		order:      append([]subscription.OrderOption{}, sq.order...),
 		inters:     append([]Interceptor{}, sq.inters...),
-		predicates: append([]predicate.Subscribe{}, sq.predicates...),
+		predicates: append([]predicate.Subscription{}, sq.predicates...),
 		withUser:   sq.withUser.Clone(),
 		withPlan:   sq.withPlan.Clone(),
 		// clone intermediate query.
@@ -309,7 +309,7 @@ func (sq *SubscribeQuery) Clone() *SubscribeQuery {
 
 // WithUser tells the query-builder to eager-load the nodes that are connected to
 // the "user" edge. The optional arguments are used to configure the query builder of the edge.
-func (sq *SubscribeQuery) WithUser(opts ...func(*UserQuery)) *SubscribeQuery {
+func (sq *SubscriptionQuery) WithUser(opts ...func(*UserQuery)) *SubscriptionQuery {
 	query := (&UserClient{config: sq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -320,7 +320,7 @@ func (sq *SubscribeQuery) WithUser(opts ...func(*UserQuery)) *SubscribeQuery {
 
 // WithPlan tells the query-builder to eager-load the nodes that are connected to
 // the "plan" edge. The optional arguments are used to configure the query builder of the edge.
-func (sq *SubscribeQuery) WithPlan(opts ...func(*PlanQuery)) *SubscribeQuery {
+func (sq *SubscriptionQuery) WithPlan(opts ...func(*PlanQuery)) *SubscriptionQuery {
 	query := (&PlanClient{config: sq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
@@ -339,15 +339,15 @@ func (sq *SubscribeQuery) WithPlan(opts ...func(*PlanQuery)) *SubscribeQuery {
 //		Count int `json:"count,omitempty"`
 //	}
 //
-//	client.Subscribe.Query().
-//		GroupBy(subscribe.FieldCreatedAt).
+//	client.Subscription.Query().
+//		GroupBy(subscription.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
-func (sq *SubscribeQuery) GroupBy(field string, fields ...string) *SubscribeGroupBy {
+func (sq *SubscriptionQuery) GroupBy(field string, fields ...string) *SubscriptionGroupBy {
 	sq.ctx.Fields = append([]string{field}, fields...)
-	grbuild := &SubscribeGroupBy{build: sq}
+	grbuild := &SubscriptionGroupBy{build: sq}
 	grbuild.flds = &sq.ctx.Fields
-	grbuild.label = subscribe.Label
+	grbuild.label = subscription.Label
 	grbuild.scan = grbuild.Scan
 	return grbuild
 }
@@ -361,23 +361,23 @@ func (sq *SubscribeQuery) GroupBy(field string, fields ...string) *SubscribeGrou
 //		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
-//	client.Subscribe.Query().
-//		Select(subscribe.FieldCreatedAt).
+//	client.Subscription.Query().
+//		Select(subscription.FieldCreatedAt).
 //		Scan(ctx, &v)
-func (sq *SubscribeQuery) Select(fields ...string) *SubscribeSelect {
+func (sq *SubscriptionQuery) Select(fields ...string) *SubscriptionSelect {
 	sq.ctx.Fields = append(sq.ctx.Fields, fields...)
-	sbuild := &SubscribeSelect{SubscribeQuery: sq}
-	sbuild.label = subscribe.Label
+	sbuild := &SubscriptionSelect{SubscriptionQuery: sq}
+	sbuild.label = subscription.Label
 	sbuild.flds, sbuild.scan = &sq.ctx.Fields, sbuild.Scan
 	return sbuild
 }
 
-// Aggregate returns a SubscribeSelect configured with the given aggregations.
-func (sq *SubscribeQuery) Aggregate(fns ...AggregateFunc) *SubscribeSelect {
+// Aggregate returns a SubscriptionSelect configured with the given aggregations.
+func (sq *SubscriptionQuery) Aggregate(fns ...AggregateFunc) *SubscriptionSelect {
 	return sq.Select().Aggregate(fns...)
 }
 
-func (sq *SubscribeQuery) prepareQuery(ctx context.Context) error {
+func (sq *SubscriptionQuery) prepareQuery(ctx context.Context) error {
 	for _, inter := range sq.inters {
 		if inter == nil {
 			return fmt.Errorf("ent: uninitialized interceptor (forgotten import ent/runtime?)")
@@ -389,7 +389,7 @@ func (sq *SubscribeQuery) prepareQuery(ctx context.Context) error {
 		}
 	}
 	for _, f := range sq.ctx.Fields {
-		if !subscribe.ValidColumn(f) {
+		if !subscription.ValidColumn(f) {
 			return &ValidationError{Name: f, err: fmt.Errorf("ent: invalid field %q for query", f)}
 		}
 	}
@@ -403,9 +403,9 @@ func (sq *SubscribeQuery) prepareQuery(ctx context.Context) error {
 	return nil
 }
 
-func (sq *SubscribeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Subscribe, error) {
+func (sq *SubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Subscription, error) {
 	var (
-		nodes       = []*Subscribe{}
+		nodes       = []*Subscription{}
 		withFKs     = sq.withFKs
 		_spec       = sq.querySpec()
 		loadedTypes = [2]bool{
@@ -417,13 +417,13 @@ func (sq *SubscribeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Su
 		withFKs = true
 	}
 	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, subscribe.ForeignKeys...)
+		_spec.Node.Columns = append(_spec.Node.Columns, subscription.ForeignKeys...)
 	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
-		return (*Subscribe).scanValues(nil, columns)
+		return (*Subscription).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
-		node := &Subscribe{config: sq.config}
+		node := &Subscription{config: sq.config}
 		nodes = append(nodes, node)
 		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
@@ -439,22 +439,22 @@ func (sq *SubscribeQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Su
 	}
 	if query := sq.withUser; query != nil {
 		if err := sq.loadUser(ctx, query, nodes, nil,
-			func(n *Subscribe, e *User) { n.Edges.User = e }); err != nil {
+			func(n *Subscription, e *User) { n.Edges.User = e }); err != nil {
 			return nil, err
 		}
 	}
 	if query := sq.withPlan; query != nil {
 		if err := sq.loadPlan(ctx, query, nodes, nil,
-			func(n *Subscribe, e *Plan) { n.Edges.Plan = e }); err != nil {
+			func(n *Subscription, e *Plan) { n.Edges.Plan = e }); err != nil {
 			return nil, err
 		}
 	}
 	return nodes, nil
 }
 
-func (sq *SubscribeQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Subscribe, init func(*Subscribe), assign func(*Subscribe, *User)) error {
+func (sq *SubscriptionQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Subscription, init func(*Subscription), assign func(*Subscription, *User)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Subscribe)
+	nodeids := make(map[uuid.UUID][]*Subscription)
 	for i := range nodes {
 		if nodes[i].user_subscriptions == nil {
 			continue
@@ -484,9 +484,9 @@ func (sq *SubscribeQuery) loadUser(ctx context.Context, query *UserQuery, nodes 
 	}
 	return nil
 }
-func (sq *SubscribeQuery) loadPlan(ctx context.Context, query *PlanQuery, nodes []*Subscribe, init func(*Subscribe), assign func(*Subscribe, *Plan)) error {
+func (sq *SubscriptionQuery) loadPlan(ctx context.Context, query *PlanQuery, nodes []*Subscription, init func(*Subscription), assign func(*Subscription, *Plan)) error {
 	ids := make([]uuid.UUID, 0, len(nodes))
-	nodeids := make(map[uuid.UUID][]*Subscribe)
+	nodeids := make(map[uuid.UUID][]*Subscription)
 	for i := range nodes {
 		if nodes[i].plan_subscriptions == nil {
 			continue
@@ -517,7 +517,7 @@ func (sq *SubscribeQuery) loadPlan(ctx context.Context, query *PlanQuery, nodes 
 	return nil
 }
 
-func (sq *SubscribeQuery) sqlCount(ctx context.Context) (int, error) {
+func (sq *SubscriptionQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := sq.querySpec()
 	_spec.Node.Columns = sq.ctx.Fields
 	if len(sq.ctx.Fields) > 0 {
@@ -526,8 +526,8 @@ func (sq *SubscribeQuery) sqlCount(ctx context.Context) (int, error) {
 	return sqlgraph.CountNodes(ctx, sq.driver, _spec)
 }
 
-func (sq *SubscribeQuery) querySpec() *sqlgraph.QuerySpec {
-	_spec := sqlgraph.NewQuerySpec(subscribe.Table, subscribe.Columns, sqlgraph.NewFieldSpec(subscribe.FieldID, field.TypeUUID))
+func (sq *SubscriptionQuery) querySpec() *sqlgraph.QuerySpec {
+	_spec := sqlgraph.NewQuerySpec(subscription.Table, subscription.Columns, sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID))
 	_spec.From = sq.sql
 	if unique := sq.ctx.Unique; unique != nil {
 		_spec.Unique = *unique
@@ -536,9 +536,9 @@ func (sq *SubscribeQuery) querySpec() *sqlgraph.QuerySpec {
 	}
 	if fields := sq.ctx.Fields; len(fields) > 0 {
 		_spec.Node.Columns = make([]string, 0, len(fields))
-		_spec.Node.Columns = append(_spec.Node.Columns, subscribe.FieldID)
+		_spec.Node.Columns = append(_spec.Node.Columns, subscription.FieldID)
 		for i := range fields {
-			if fields[i] != subscribe.FieldID {
+			if fields[i] != subscription.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
 		}
@@ -566,12 +566,12 @@ func (sq *SubscribeQuery) querySpec() *sqlgraph.QuerySpec {
 	return _spec
 }
 
-func (sq *SubscribeQuery) sqlQuery(ctx context.Context) *sql.Selector {
+func (sq *SubscriptionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	builder := sql.Dialect(sq.driver.Dialect())
-	t1 := builder.Table(subscribe.Table)
+	t1 := builder.Table(subscription.Table)
 	columns := sq.ctx.Fields
 	if len(columns) == 0 {
-		columns = subscribe.Columns
+		columns = subscription.Columns
 	}
 	selector := builder.Select(t1.Columns(columns...)...).From(t1)
 	if sq.sql != nil {
@@ -598,28 +598,28 @@ func (sq *SubscribeQuery) sqlQuery(ctx context.Context) *sql.Selector {
 	return selector
 }
 
-// SubscribeGroupBy is the group-by builder for Subscribe entities.
-type SubscribeGroupBy struct {
+// SubscriptionGroupBy is the group-by builder for Subscription entities.
+type SubscriptionGroupBy struct {
 	selector
-	build *SubscribeQuery
+	build *SubscriptionQuery
 }
 
 // Aggregate adds the given aggregation functions to the group-by query.
-func (sgb *SubscribeGroupBy) Aggregate(fns ...AggregateFunc) *SubscribeGroupBy {
+func (sgb *SubscriptionGroupBy) Aggregate(fns ...AggregateFunc) *SubscriptionGroupBy {
 	sgb.fns = append(sgb.fns, fns...)
 	return sgb
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (sgb *SubscribeGroupBy) Scan(ctx context.Context, v any) error {
+func (sgb *SubscriptionGroupBy) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, sgb.build.ctx, "GroupBy")
 	if err := sgb.build.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*SubscribeQuery, *SubscribeGroupBy](ctx, sgb.build, sgb, sgb.build.inters, v)
+	return scanWithInterceptors[*SubscriptionQuery, *SubscriptionGroupBy](ctx, sgb.build, sgb, sgb.build.inters, v)
 }
 
-func (sgb *SubscribeGroupBy) sqlScan(ctx context.Context, root *SubscribeQuery, v any) error {
+func (sgb *SubscriptionGroupBy) sqlScan(ctx context.Context, root *SubscriptionQuery, v any) error {
 	selector := root.sqlQuery(ctx).Select()
 	aggregation := make([]string, 0, len(sgb.fns))
 	for _, fn := range sgb.fns {
@@ -646,28 +646,28 @@ func (sgb *SubscribeGroupBy) sqlScan(ctx context.Context, root *SubscribeQuery, 
 	return sql.ScanSlice(rows, v)
 }
 
-// SubscribeSelect is the builder for selecting fields of Subscribe entities.
-type SubscribeSelect struct {
-	*SubscribeQuery
+// SubscriptionSelect is the builder for selecting fields of Subscription entities.
+type SubscriptionSelect struct {
+	*SubscriptionQuery
 	selector
 }
 
 // Aggregate adds the given aggregation functions to the selector query.
-func (ss *SubscribeSelect) Aggregate(fns ...AggregateFunc) *SubscribeSelect {
+func (ss *SubscriptionSelect) Aggregate(fns ...AggregateFunc) *SubscriptionSelect {
 	ss.fns = append(ss.fns, fns...)
 	return ss
 }
 
 // Scan applies the selector query and scans the result into the given value.
-func (ss *SubscribeSelect) Scan(ctx context.Context, v any) error {
+func (ss *SubscriptionSelect) Scan(ctx context.Context, v any) error {
 	ctx = setContextOp(ctx, ss.ctx, "Select")
 	if err := ss.prepareQuery(ctx); err != nil {
 		return err
 	}
-	return scanWithInterceptors[*SubscribeQuery, *SubscribeSelect](ctx, ss.SubscribeQuery, ss, ss.inters, v)
+	return scanWithInterceptors[*SubscriptionQuery, *SubscriptionSelect](ctx, ss.SubscriptionQuery, ss, ss.inters, v)
 }
 
-func (ss *SubscribeSelect) sqlScan(ctx context.Context, root *SubscribeQuery, v any) error {
+func (ss *SubscriptionSelect) sqlScan(ctx context.Context, root *SubscriptionQuery, v any) error {
 	selector := root.sqlQuery(ctx)
 	aggregation := make([]string, 0, len(ss.fns))
 	for _, fn := range ss.fns {

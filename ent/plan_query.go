@@ -6,7 +6,7 @@ import (
 	"context"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
-	"cyclic/ent/subscribe"
+	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 	"database/sql/driver"
 	"fmt"
@@ -26,7 +26,7 @@ type PlanQuery struct {
 	inters            []Interceptor
 	predicates        []predicate.Plan
 	withHost          *UserQuery
-	withSubscriptions *SubscribeQuery
+	withSubscriptions *SubscriptionQuery
 	withFKs           bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -87,8 +87,8 @@ func (pq *PlanQuery) QueryHost() *UserQuery {
 }
 
 // QuerySubscriptions chains the current query on the "subscriptions" edge.
-func (pq *PlanQuery) QuerySubscriptions() *SubscribeQuery {
-	query := (&SubscribeClient{config: pq.config}).Query()
+func (pq *PlanQuery) QuerySubscriptions() *SubscriptionQuery {
+	query := (&SubscriptionClient{config: pq.config}).Query()
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := pq.prepareQuery(ctx); err != nil {
 			return nil, err
@@ -99,7 +99,7 @@ func (pq *PlanQuery) QuerySubscriptions() *SubscribeQuery {
 		}
 		step := sqlgraph.NewStep(
 			sqlgraph.From(plan.Table, plan.FieldID, selector),
-			sqlgraph.To(subscribe.Table, subscribe.FieldID),
+			sqlgraph.To(subscription.Table, subscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, plan.SubscriptionsTable, plan.SubscriptionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(pq.driver.Dialect(), step)
@@ -321,8 +321,8 @@ func (pq *PlanQuery) WithHost(opts ...func(*UserQuery)) *PlanQuery {
 
 // WithSubscriptions tells the query-builder to eager-load the nodes that are connected to
 // the "subscriptions" edge. The optional arguments are used to configure the query builder of the edge.
-func (pq *PlanQuery) WithSubscriptions(opts ...func(*SubscribeQuery)) *PlanQuery {
-	query := (&SubscribeClient{config: pq.config}).Query()
+func (pq *PlanQuery) WithSubscriptions(opts ...func(*SubscriptionQuery)) *PlanQuery {
+	query := (&SubscriptionClient{config: pq.config}).Query()
 	for _, opt := range opts {
 		opt(query)
 	}
@@ -446,8 +446,8 @@ func (pq *PlanQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Plan, e
 	}
 	if query := pq.withSubscriptions; query != nil {
 		if err := pq.loadSubscriptions(ctx, query, nodes,
-			func(n *Plan) { n.Edges.Subscriptions = []*Subscribe{} },
-			func(n *Plan, e *Subscribe) { n.Edges.Subscriptions = append(n.Edges.Subscriptions, e) }); err != nil {
+			func(n *Plan) { n.Edges.Subscriptions = []*Subscription{} },
+			func(n *Plan, e *Subscription) { n.Edges.Subscriptions = append(n.Edges.Subscriptions, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -486,7 +486,7 @@ func (pq *PlanQuery) loadHost(ctx context.Context, query *UserQuery, nodes []*Pl
 	}
 	return nil
 }
-func (pq *PlanQuery) loadSubscriptions(ctx context.Context, query *SubscribeQuery, nodes []*Plan, init func(*Plan), assign func(*Plan, *Subscribe)) error {
+func (pq *PlanQuery) loadSubscriptions(ctx context.Context, query *SubscriptionQuery, nodes []*Plan, init func(*Plan), assign func(*Plan, *Subscription)) error {
 	fks := make([]driver.Value, 0, len(nodes))
 	nodeids := make(map[uuid.UUID]*Plan)
 	for i := range nodes {
@@ -497,7 +497,7 @@ func (pq *PlanQuery) loadSubscriptions(ctx context.Context, query *SubscribeQuer
 		}
 	}
 	query.withFKs = true
-	query.Where(predicate.Subscribe(func(s *sql.Selector) {
+	query.Where(predicate.Subscription(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(plan.SubscriptionsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)

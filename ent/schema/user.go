@@ -41,6 +41,6 @@ func (User) Fields() []ent.Field {
 func (User) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("plans", Plan.Type),
-		edge.To("subscriptions", Subscribe.Type),
+		edge.To("subscriptions", Subscription.Type),
 	}
 }

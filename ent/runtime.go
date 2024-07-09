@@ -5,7 +5,7 @@ package ent
 import (
 	"cyclic/ent/plan"
 	"cyclic/ent/schema"
-	"cyclic/ent/subscribe"
+	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 	"time"
 
@@ -40,16 +40,16 @@ func init() {
 	planDescID := planFields[0].Descriptor()
 	// plan.DefaultID holds the default value on creation for the id field.
 	plan.DefaultID = planDescID.Default.(func() uuid.UUID)
-	subscribeFields := schema.Subscribe{}.Fields()
-	_ = subscribeFields
-	// subscribeDescCreatedAt is the schema descriptor for created_at field.
-	subscribeDescCreatedAt := subscribeFields[1].Descriptor()
-	// subscribe.DefaultCreatedAt holds the default value on creation for the created_at field.
-	subscribe.DefaultCreatedAt = subscribeDescCreatedAt.Default.(func() time.Time)
-	// subscribeDescID is the schema descriptor for id field.
-	subscribeDescID := subscribeFields[0].Descriptor()
-	// subscribe.DefaultID holds the default value on creation for the id field.
-	subscribe.DefaultID = subscribeDescID.Default.(func() uuid.UUID)
+	subscriptionFields := schema.Subscription{}.Fields()
+	_ = subscriptionFields
+	// subscriptionDescCreatedAt is the schema descriptor for created_at field.
+	subscriptionDescCreatedAt := subscriptionFields[1].Descriptor()
+	// subscription.DefaultCreatedAt holds the default value on creation for the created_at field.
+	subscription.DefaultCreatedAt = subscriptionDescCreatedAt.Default.(func() time.Time)
+	// subscriptionDescID is the schema descriptor for id field.
+	subscriptionDescID := subscriptionFields[0].Descriptor()
+	// subscription.DefaultID holds the default value on creation for the id field.
+	subscription.DefaultID = subscriptionDescID.Default.(func() uuid.UUID)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescUsername is the schema descriptor for username field.

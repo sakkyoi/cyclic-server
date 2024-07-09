@@ -39,8 +39,8 @@ var (
 			},
 		},
 	}
-	// SubscribesColumns holds the columns for the "subscribes" table.
-	SubscribesColumns = []*schema.Column{
+	// SubscriptionsColumns holds the columns for the "subscriptions" table.
+	SubscriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "subscribed_at", Type: field.TypeTime, Nullable: true},
@@ -48,30 +48,30 @@ var (
 		{Name: "plan_subscriptions", Type: field.TypeUUID},
 		{Name: "user_subscriptions", Type: field.TypeUUID},
 	}
-	// SubscribesTable holds the schema information for the "subscribes" table.
-	SubscribesTable = &schema.Table{
-		Name:       "subscribes",
-		Columns:    SubscribesColumns,
-		PrimaryKey: []*schema.Column{SubscribesColumns[0]},
+	// SubscriptionsTable holds the schema information for the "subscriptions" table.
+	SubscriptionsTable = &schema.Table{
+		Name:       "subscriptions",
+		Columns:    SubscriptionsColumns,
+		PrimaryKey: []*schema.Column{SubscriptionsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "subscribes_plans_subscriptions",
-				Columns:    []*schema.Column{SubscribesColumns[4]},
+				Symbol:     "subscriptions_plans_subscriptions",
+				Columns:    []*schema.Column{SubscriptionsColumns[4]},
 				RefColumns: []*schema.Column{PlansColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
-				Symbol:     "subscribes_users_subscriptions",
-				Columns:    []*schema.Column{SubscribesColumns[5]},
+				Symbol:     "subscriptions_users_subscriptions",
+				Columns:    []*schema.Column{SubscriptionsColumns[5]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
-				Name:    "subscribe_user_subscriptions_plan_subscriptions",
+				Name:    "subscription_user_subscriptions_plan_subscriptions",
 				Unique:  true,
-				Columns: []*schema.Column{SubscribesColumns[5], SubscribesColumns[4]},
+				Columns: []*schema.Column{SubscriptionsColumns[5], SubscriptionsColumns[4]},
 			},
 		},
 	}
@@ -94,13 +94,13 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		PlansTable,
-		SubscribesTable,
+		SubscriptionsTable,
 		UsersTable,
 	}
 )
 
 func init() {
 	PlansTable.ForeignKeys[0].RefTable = UsersTable
-	SubscribesTable.ForeignKeys[0].RefTable = PlansTable
-	SubscribesTable.ForeignKeys[1].RefTable = UsersTable
+	SubscriptionsTable.ForeignKeys[0].RefTable = PlansTable
+	SubscriptionsTable.ForeignKeys[1].RefTable = UsersTable
 }

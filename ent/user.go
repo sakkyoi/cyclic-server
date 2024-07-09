@@ -40,7 +40,7 @@ type UserEdges struct {
 	// Plans holds the value of the plans edge.
 	Plans []*Plan `json:"plans,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
-	Subscriptions []*Subscribe `json:"subscriptions,omitempty"`
+	Subscriptions []*Subscription `json:"subscriptions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
 	loadedTypes [2]bool
@@ -57,7 +57,7 @@ func (e UserEdges) PlansOrErr() ([]*Plan, error) {
 
 // SubscriptionsOrErr returns the Subscriptions value or an error if the edge
 // was not loaded in eager-loading.
-func (e UserEdges) SubscriptionsOrErr() ([]*Subscribe, error) {
+func (e UserEdges) SubscriptionsOrErr() ([]*Subscription, error) {
 	if e.loadedTypes[1] {
 		return e.Subscriptions, nil
 	}
@@ -153,7 +153,7 @@ func (u *User) QueryPlans() *PlanQuery {
 }
 
 // QuerySubscriptions queries the "subscriptions" edge of the User entity.
-func (u *User) QuerySubscriptions() *SubscribeQuery {
+func (u *User) QuerySubscriptions() *SubscriptionQuery {
 	return NewUserClient(u.config).QuerySubscriptions(u)
 }
 
