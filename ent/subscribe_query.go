@@ -335,12 +335,12 @@ func (sq *SubscribeQuery) WithPlan(opts ...func(*PlanQuery)) *SubscribeQuery {
 // Example:
 //
 //	var v []struct {
-//		SubscribedAt time.Time `json:"subscribed_at,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Subscribe.Query().
-//		GroupBy(subscribe.FieldSubscribedAt).
+//		GroupBy(subscribe.FieldCreatedAt).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (sq *SubscribeQuery) GroupBy(field string, fields ...string) *SubscribeGroupBy {
@@ -358,11 +358,11 @@ func (sq *SubscribeQuery) GroupBy(field string, fields ...string) *SubscribeGrou
 // Example:
 //
 //	var v []struct {
-//		SubscribedAt time.Time `json:"subscribed_at,omitempty"`
+//		CreatedAt time.Time `json:"created_at,omitempty"`
 //	}
 //
 //	client.Subscribe.Query().
-//		Select(subscribe.FieldSubscribedAt).
+//		Select(subscribe.FieldCreatedAt).
 //		Scan(ctx, &v)
 func (sq *SubscribeQuery) Select(fields ...string) *SubscribeSelect {
 	sq.ctx.Fields = append(sq.ctx.Fields, fields...)

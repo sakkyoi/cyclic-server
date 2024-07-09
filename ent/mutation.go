@@ -1226,6 +1226,7 @@ type SubscribeMutation struct {
 	op            Op
 	typ           string
 	id            *uuid.UUID
+	created_at    *time.Time
 	subscribed_at *time.Time
 	left_at       *time.Time
 	clearedFields map[string]struct{}
@@ -1340,6 +1341,42 @@ func (m *SubscribeMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *SubscribeMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *SubscribeMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Subscribe entity.
+// If the Subscribe object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscribeMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *SubscribeMutation) ResetCreatedAt() {
+	m.created_at = nil
 }
 
 // SetSubscribedAt sets the "subscribed_at" field.
@@ -1552,7 +1589,10 @@ func (m *SubscribeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubscribeMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
+	if m.created_at != nil {
+		fields = append(fields, subscribe.FieldCreatedAt)
+	}
 	if m.subscribed_at != nil {
 		fields = append(fields, subscribe.FieldSubscribedAt)
 	}
@@ -1567,6 +1607,8 @@ func (m *SubscribeMutation) Fields() []string {
 // schema.
 func (m *SubscribeMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case subscribe.FieldCreatedAt:
+		return m.CreatedAt()
 	case subscribe.FieldSubscribedAt:
 		return m.SubscribedAt()
 	case subscribe.FieldLeftAt:
@@ -1580,6 +1622,8 @@ func (m *SubscribeMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *SubscribeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case subscribe.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
 	case subscribe.FieldSubscribedAt:
 		return m.OldSubscribedAt(ctx)
 	case subscribe.FieldLeftAt:
@@ -1593,6 +1637,13 @@ func (m *SubscribeMutation) OldField(ctx context.Context, name string) (ent.Valu
 // type.
 func (m *SubscribeMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case subscribe.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
 	case subscribe.FieldSubscribedAt:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -1671,6 +1722,9 @@ func (m *SubscribeMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *SubscribeMutation) ResetField(name string) error {
 	switch name {
+	case subscribe.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
 	case subscribe.FieldSubscribedAt:
 		m.ResetSubscribedAt()
 		return nil

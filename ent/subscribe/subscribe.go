@@ -3,6 +3,8 @@
 package subscribe
 
 import (
+	"time"
+
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/google/uuid"
@@ -13,6 +15,8 @@ const (
 	Label = "subscribe"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
+	// FieldCreatedAt holds the string denoting the created_at field in the database.
+	FieldCreatedAt = "created_at"
 	// FieldSubscribedAt holds the string denoting the subscribed_at field in the database.
 	FieldSubscribedAt = "subscribed_at"
 	// FieldLeftAt holds the string denoting the left_at field in the database.
@@ -42,6 +46,7 @@ const (
 // Columns holds all SQL columns for subscribe fields.
 var Columns = []string{
 	FieldID,
+	FieldCreatedAt,
 	FieldSubscribedAt,
 	FieldLeftAt,
 }
@@ -69,6 +74,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
+	DefaultCreatedAt func() time.Time
 	// DefaultID holds the default value on creation for the "id" field.
 	DefaultID func() uuid.UUID
 )
@@ -79,6 +86,11 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
+}
+
+// ByCreatedAt orders the results by the created_at field.
+func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
 }
 
 // BySubscribedAt orders the results by the subscribed_at field.

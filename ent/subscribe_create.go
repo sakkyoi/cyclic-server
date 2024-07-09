@@ -23,6 +23,20 @@ type SubscribeCreate struct {
 	hooks    []Hook
 }
 
+// SetCreatedAt sets the "created_at" field.
+func (sc *SubscribeCreate) SetCreatedAt(t time.Time) *SubscribeCreate {
+	sc.mutation.SetCreatedAt(t)
+	return sc
+}
+
+// SetNillableCreatedAt sets the "created_at" field if the given value is not nil.
+func (sc *SubscribeCreate) SetNillableCreatedAt(t *time.Time) *SubscribeCreate {
+	if t != nil {
+		sc.SetCreatedAt(*t)
+	}
+	return sc
+}
+
 // SetSubscribedAt sets the "subscribed_at" field.
 func (sc *SubscribeCreate) SetSubscribedAt(t time.Time) *SubscribeCreate {
 	sc.mutation.SetSubscribedAt(t)
@@ -122,6 +136,10 @@ func (sc *SubscribeCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (sc *SubscribeCreate) defaults() {
+	if _, ok := sc.mutation.CreatedAt(); !ok {
+		v := subscribe.DefaultCreatedAt()
+		sc.mutation.SetCreatedAt(v)
+	}
 	if _, ok := sc.mutation.ID(); !ok {
 		v := subscribe.DefaultID()
 		sc.mutation.SetID(v)
@@ -130,6 +148,9 @@ func (sc *SubscribeCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (sc *SubscribeCreate) check() error {
+	if _, ok := sc.mutation.CreatedAt(); !ok {
+		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Subscribe.created_at"`)}
+	}
 	if _, ok := sc.mutation.UserID(); !ok {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Subscribe.user"`)}
 	}
@@ -170,6 +191,10 @@ func (sc *SubscribeCreate) createSpec() (*Subscribe, *sqlgraph.CreateSpec) {
 	if id, ok := sc.mutation.ID(); ok {
 		_node.ID = id
 		_spec.ID.Value = &id
+	}
+	if value, ok := sc.mutation.CreatedAt(); ok {
+		_spec.SetField(subscribe.FieldCreatedAt, field.TypeTime, value)
+		_node.CreatedAt = value
 	}
 	if value, ok := sc.mutation.SubscribedAt(); ok {
 		_spec.SetField(subscribe.FieldSubscribedAt, field.TypeTime, value)

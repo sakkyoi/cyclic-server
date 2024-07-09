@@ -65,20 +65,21 @@ func build() *gin.Engine {
 		apiGroup.GET("/verify/:token", a.Signup.Verify) // verify with token if verification is enabled
 
 		// user
-		apiGroup.POST("/auth", a.User.Auth)
-
-		apiGroup.GET("/user", jwt.JWT(), a.User.Get)
+		apiGroup.POST("/auth", a.User.Auth)          // authenticate user (to get JWT token)
+		apiGroup.GET("/user", jwt.JWT(), a.User.Get) // get user profile
 
 		// plan
-		apiGroup.POST("/plan", jwt.JWT(), a.Plan.Create)
-		apiGroup.PUT("/plan/:id", jwt.JWT(), a.Plan.Update)
-		apiGroup.DELETE("/plan/:id", jwt.JWT(), a.Plan.Remove)
-		apiGroup.GET("/plan", jwt.JWT(), a.Plan.List)
-		apiGroup.POST("/plan/:id/invite", jwt.JWT(), a.Plan.Invite)          // invite user to subscription
-		apiGroup.GET("/plan/:id/subscribers", jwt.JWT(), a.Plan.Subscribers) // list subscribers of a subscription
+		apiGroup.POST("/plan", jwt.JWT(), a.Plan.Create)                     // create plan
+		apiGroup.PUT("/plan/:id", jwt.JWT(), a.Plan.Update)                  // update plan
+		apiGroup.DELETE("/plan/:id", jwt.JWT(), a.Plan.Remove)               // remove plan (soft delete)
+		apiGroup.GET("/plan", jwt.JWT(), a.Plan.List)                        // list plans
+		apiGroup.POST("/plan/:id/invite", jwt.JWT(), a.Plan.Invite)          // invite user to subscribe
+		apiGroup.GET("/plan/:id/subscribers", jwt.JWT(), a.Plan.Subscribers) // list subscribers of a plan
 
 		// subscription
 		// TODO: list subscription (for user)
+		apiGroup.GET("/subscriptions", jwt.JWT(), a.Subscribe.List) // list subscriptions (including invitations)
+		// TODO: list invitation
 		// TODO: subscribe (if user is invited)
 		// TODO: leave subscription (must not be the owner)
 	}

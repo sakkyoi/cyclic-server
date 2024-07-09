@@ -20,6 +20,8 @@ type Subscribe struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID uuid.UUID `json:"id,omitempty"`
+	// CreatedAt holds the value of the "created_at" field.
+	CreatedAt time.Time `json:"created_at,omitempty"`
 	// SubscribedAt holds the value of the "subscribed_at" field.
 	SubscribedAt time.Time `json:"subscribed_at,omitempty"`
 	// LeftAt holds the value of the "left_at" field.
@@ -70,7 +72,7 @@ func (*Subscribe) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case subscribe.FieldSubscribedAt, subscribe.FieldLeftAt:
+		case subscribe.FieldCreatedAt, subscribe.FieldSubscribedAt, subscribe.FieldLeftAt:
 			values[i] = new(sql.NullTime)
 		case subscribe.FieldID:
 			values[i] = new(uuid.UUID)
@@ -98,6 +100,12 @@ func (s *Subscribe) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value != nil {
 				s.ID = *value
+			}
+		case subscribe.FieldCreatedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field created_at", values[i])
+			} else if value.Valid {
+				s.CreatedAt = value.Time
 			}
 		case subscribe.FieldSubscribedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -171,6 +179,9 @@ func (s *Subscribe) String() string {
 	var builder strings.Builder
 	builder.WriteString("Subscribe(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", s.ID))
+	builder.WriteString("created_at=")
+	builder.WriteString(s.CreatedAt.Format(time.ANSIC))
+	builder.WriteString(", ")
 	builder.WriteString("subscribed_at=")
 	builder.WriteString(s.SubscribedAt.Format(time.ANSIC))
 	builder.WriteString(", ")

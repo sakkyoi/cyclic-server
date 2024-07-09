@@ -42,6 +42,7 @@ var (
 	// SubscribesColumns holds the columns for the "subscribes" table.
 	SubscribesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
+		{Name: "created_at", Type: field.TypeTime},
 		{Name: "subscribed_at", Type: field.TypeTime, Nullable: true},
 		{Name: "left_at", Type: field.TypeTime, Nullable: true},
 		{Name: "plan_subscriptions", Type: field.TypeUUID},
@@ -55,13 +56,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "subscribes_plans_subscriptions",
-				Columns:    []*schema.Column{SubscribesColumns[3]},
+				Columns:    []*schema.Column{SubscribesColumns[4]},
 				RefColumns: []*schema.Column{PlansColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "subscribes_users_subscriptions",
-				Columns:    []*schema.Column{SubscribesColumns[4]},
+				Columns:    []*schema.Column{SubscribesColumns[5]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -70,7 +71,7 @@ var (
 			{
 				Name:    "subscribe_user_subscriptions_plan_subscriptions",
 				Unique:  true,
-				Columns: []*schema.Column{SubscribesColumns[4], SubscribesColumns[3]},
+				Columns: []*schema.Column{SubscribesColumns[5], SubscribesColumns[4]},
 			},
 		},
 	}

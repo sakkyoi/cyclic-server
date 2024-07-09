@@ -42,6 +42,10 @@ func init() {
 	plan.DefaultID = planDescID.Default.(func() uuid.UUID)
 	subscribeFields := schema.Subscribe{}.Fields()
 	_ = subscribeFields
+	// subscribeDescCreatedAt is the schema descriptor for created_at field.
+	subscribeDescCreatedAt := subscribeFields[1].Descriptor()
+	// subscribe.DefaultCreatedAt holds the default value on creation for the created_at field.
+	subscribe.DefaultCreatedAt = subscribeDescCreatedAt.Default.(func() time.Time)
 	// subscribeDescID is the schema descriptor for id field.
 	subscribeDescID := subscribeFields[0].Descriptor()
 	// subscribe.DefaultID holds the default value on creation for the id field.

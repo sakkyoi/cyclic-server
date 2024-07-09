@@ -6,6 +6,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 	"github.com/google/uuid"
+	"time"
 )
 
 // Subscribe holds the schema definition for the Subscribe entity.
@@ -18,6 +19,9 @@ func (Subscribe) Fields() []ent.Field {
 	return []ent.Field{
 		field.UUID("id", uuid.UUID{}).
 			Default(uuid.New),
+		field.Time("created_at").
+			Default(time.Now).
+			Immutable(),
 		field.Time("subscribed_at").
 			Optional(),
 		field.Time("left_at").
