@@ -15,11 +15,13 @@ var ctx = context.Background()
 var (
 	Verify = "verify"
 	Notify = "notify"
+	Invite = "invite"
 )
 
 type Message struct {
 	Type   string `json:"type"`
 	Target string `json:"target"`
+	Data   string `json:"data"` // additional data (e.g. plan id, optional)
 }
 
 func Init() error {

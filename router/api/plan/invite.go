@@ -4,11 +4,14 @@ import (
 	"cyclic/ent"
 	"cyclic/ent/plan"
 	"cyclic/ent/user"
+	"cyclic/pkg/dispatcher"
 	"cyclic/pkg/magistrate"
+	"cyclic/pkg/scribe"
 	"cyclic/pkg/secretary"
 	"cyclic/router/model"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"net/http"
 )
 
@@ -89,7 +92,14 @@ func (*Plan) Invite(c *gin.Context) {
 		return
 	}
 
-	// TODO: send email to the user
+	// enqueue a message to send an email
+	if err := dispatcher.Enqueue(&dispatcher.Message{
+		Type:   dispatcher.Invite,
+		Target: u.ID.String(),
+		Data:   p.ID.String(),
+	}); err != nil {
+		scribe.Scribe.Error("failed to enqueue message", zap.Error(err)) // just log the error cause the user is already created
+	}
 
 	c.JSON(http.StatusOK, model.Response{Data: result.ID.String()})
 }

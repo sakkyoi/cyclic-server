@@ -2,6 +2,7 @@ package mailer
 
 import (
 	"context"
+	"cyclic/ent/plan"
 	"cyclic/ent/user"
 	"cyclic/pkg/colonel"
 	"cyclic/pkg/dispatcher"
@@ -80,6 +81,39 @@ func SendEmail(ctx context.Context, message *dispatcher.Message) error {
 		msg := strings.NewReader(fmt.Sprintf("Subject: Verify your email\n\n"+
 			"Please verify your email address.\n\n"+
 			"%s", token))
+
+		if err := smtp.SendMail(fmt.Sprintf("%s:%d", colonel.Writ.SMTP.Host, colonel.Writ.SMTP.Port), auth, colonel.Writ.SMTP.User, to, msg); err != nil {
+			return err
+		}
+	case dispatcher.Invite:
+		// send invite email
+		scribe.Scribe.Debug("invitation email", zap.String("plan", message.Data), zap.String("user", message.Target))
+
+		// get user email
+		result, err := secretary.Minute.User.Query().Where(user.ID(uuid.MustParse(message.Target))).Only(ctx)
+		if err != nil {
+			return err
+		}
+
+		// get plan name, host name
+		p, err := secretary.Minute.Plan.Query().Where(plan.ID(uuid.MustParse(message.Data))).Only(ctx)
+		if err != nil {
+			return err
+		}
+
+		// get host name, username
+		host, err := p.QueryHost().Only(ctx)
+		if err != nil {
+			return err
+		}
+
+		// send email
+		auth := sasl.NewPlainClient("", colonel.Writ.SMTP.User, colonel.Writ.SMTP.Password)
+
+		to := []string{result.Email}
+		msg := strings.NewReader(fmt.Sprintf("Subject: Invitation to %s\n\n"+
+			"You have been invited to %s by %s(%s).\n\n"+
+			"Please accept the invitation.\n", p.Name, p.Name, host.Name, host.Username))
 
 		if err := smtp.SendMail(fmt.Sprintf("%s:%d", colonel.Writ.SMTP.Host, colonel.Writ.SMTP.Port), auth, colonel.Writ.SMTP.User, to, msg); err != nil {
 			return err
