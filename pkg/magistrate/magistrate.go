@@ -85,6 +85,22 @@ func (m *Magistrate) Gavel(r *http.Request) (*Claims, error) {
 	return claims, nil
 }
 
+func (m *Magistrate) GavelString(token string) (*Claims, error) {
+	t, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		return m.VerifyKey, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	claims, ok := t.Claims.(*Claims)
+	if !ok {
+		return nil, errors.New("failed to parse claims")
+	}
+
+	return claims, nil
+}
+
 func (m *Magistrate) Examine(claims *Claims, aud string) bool {
 	if !slices.Contains(claims.Audience, aud) {
 		return false

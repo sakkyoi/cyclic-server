@@ -12,7 +12,14 @@ import (
 )
 
 func (*Signup) Verify(c *gin.Context) {
-	claims := c.MustGet("claims").(*magistrate.Claims) // get claims from context
+	// parse the token claims
+	m := magistrate.New()
+	claims, err := m.GavelString(c.Param("token"))
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
 
 	// check if the token is authorized for this action
 	if !magistrate.New().Examine(claims, "verify") {
