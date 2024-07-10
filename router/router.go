@@ -81,7 +81,8 @@ func build() *gin.Engine {
 		apiGroup.PATCH("/subscription/:id", jwt.JWT(), a.Subscribe.Subscribe) // subscribe to a plan
 
 		// record
-		apiGroup.POST("/record", jwt.JWT(), a.Record.Add) // add record
+		apiGroup.POST("/record", jwt.JWT(), a.Record.Add)          // add record
+		apiGroup.PATCH("/record/:id", jwt.JWT(), a.Record.Confirm) // confirm record
 	}
 
 	return r

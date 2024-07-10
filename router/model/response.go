@@ -11,6 +11,7 @@ var (
 	ErrorPlanNotFound         = "plan_not_found"
 	ErrorSubscriptionExists   = "subscription_exists"
 	ErrorSubscriptionNotFound = "subscription_not_found"
+	ErrorRecordNotFound       = "record_not_found"
 )
 
 type Response struct {
