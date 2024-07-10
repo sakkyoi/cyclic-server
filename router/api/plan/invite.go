@@ -13,10 +13,12 @@ import (
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 type InviteInput struct {
-	User string `form:"user" binding:"required"`
+	User      string `form:"user" binding:"required"`
+	StartFrom string `form:"start_from" binding:"required"`
 }
 
 func (*Plan) Invite(c *gin.Context) {
@@ -77,12 +79,20 @@ func (*Plan) Invite(c *gin.Context) {
 		return
 	}
 
+	// parse start_from into time
+	startFrom, err := time.Parse(time.RFC3339, input.StartFrom)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "start_from must be in RFC3339 format", Detail: err.Error()})
+		return
+	}
+
 	// invite the user to the plan
 	// the reason we don't use AddUserID is that we need to check if the user is existed.
 	// user already invited error are the same as user exists error (constraint error)
 	result, err := secretary.Minute.Subscription.Create().
 		SetPlan(p).
 		SetUser(u).
+		SetStartFrom(startFrom).
 		Save(c)
 	if ent.IsConstraintError(err) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorSubscriptionExists, Error: "user already invited to the plan"})

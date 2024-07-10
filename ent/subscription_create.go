@@ -37,6 +37,12 @@ func (sc *SubscriptionCreate) SetNillableCreatedAt(t *time.Time) *SubscriptionCr
 	return sc
 }
 
+// SetStartFrom sets the "start_from" field.
+func (sc *SubscriptionCreate) SetStartFrom(t time.Time) *SubscriptionCreate {
+	sc.mutation.SetStartFrom(t)
+	return sc
+}
+
 // SetSubscribedAt sets the "subscribed_at" field.
 func (sc *SubscriptionCreate) SetSubscribedAt(t time.Time) *SubscriptionCreate {
 	sc.mutation.SetSubscribedAt(t)
@@ -151,6 +157,9 @@ func (sc *SubscriptionCreate) check() error {
 	if _, ok := sc.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Subscription.created_at"`)}
 	}
+	if _, ok := sc.mutation.StartFrom(); !ok {
+		return &ValidationError{Name: "start_from", err: errors.New(`ent: missing required field "Subscription.start_from"`)}
+	}
 	if _, ok := sc.mutation.UserID(); !ok {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "Subscription.user"`)}
 	}
@@ -195,6 +204,10 @@ func (sc *SubscriptionCreate) createSpec() (*Subscription, *sqlgraph.CreateSpec)
 	if value, ok := sc.mutation.CreatedAt(); ok {
 		_spec.SetField(subscription.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if value, ok := sc.mutation.StartFrom(); ok {
+		_spec.SetField(subscription.FieldStartFrom, field.TypeTime, value)
+		_node.StartFrom = value
 	}
 	if value, ok := sc.mutation.SubscribedAt(); ok {
 		_spec.SetField(subscription.FieldSubscribedAt, field.TypeTime, value)

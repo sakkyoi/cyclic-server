@@ -61,6 +61,11 @@ func CreatedAt(v time.Time) predicate.Subscription {
 	return predicate.Subscription(sql.FieldEQ(FieldCreatedAt, v))
 }
 
+// StartFrom applies equality check predicate on the "start_from" field. It's identical to StartFromEQ.
+func StartFrom(v time.Time) predicate.Subscription {
+	return predicate.Subscription(sql.FieldEQ(FieldStartFrom, v))
+}
+
 // SubscribedAt applies equality check predicate on the "subscribed_at" field. It's identical to SubscribedAtEQ.
 func SubscribedAt(v time.Time) predicate.Subscription {
 	return predicate.Subscription(sql.FieldEQ(FieldSubscribedAt, v))
@@ -109,6 +114,46 @@ func CreatedAtLT(v time.Time) predicate.Subscription {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.Subscription {
 	return predicate.Subscription(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// StartFromEQ applies the EQ predicate on the "start_from" field.
+func StartFromEQ(v time.Time) predicate.Subscription {
+	return predicate.Subscription(sql.FieldEQ(FieldStartFrom, v))
+}
+
+// StartFromNEQ applies the NEQ predicate on the "start_from" field.
+func StartFromNEQ(v time.Time) predicate.Subscription {
+	return predicate.Subscription(sql.FieldNEQ(FieldStartFrom, v))
+}
+
+// StartFromIn applies the In predicate on the "start_from" field.
+func StartFromIn(vs ...time.Time) predicate.Subscription {
+	return predicate.Subscription(sql.FieldIn(FieldStartFrom, vs...))
+}
+
+// StartFromNotIn applies the NotIn predicate on the "start_from" field.
+func StartFromNotIn(vs ...time.Time) predicate.Subscription {
+	return predicate.Subscription(sql.FieldNotIn(FieldStartFrom, vs...))
+}
+
+// StartFromGT applies the GT predicate on the "start_from" field.
+func StartFromGT(v time.Time) predicate.Subscription {
+	return predicate.Subscription(sql.FieldGT(FieldStartFrom, v))
+}
+
+// StartFromGTE applies the GTE predicate on the "start_from" field.
+func StartFromGTE(v time.Time) predicate.Subscription {
+	return predicate.Subscription(sql.FieldGTE(FieldStartFrom, v))
+}
+
+// StartFromLT applies the LT predicate on the "start_from" field.
+func StartFromLT(v time.Time) predicate.Subscription {
+	return predicate.Subscription(sql.FieldLT(FieldStartFrom, v))
+}
+
+// StartFromLTE applies the LTE predicate on the "start_from" field.
+func StartFromLTE(v time.Time) predicate.Subscription {
+	return predicate.Subscription(sql.FieldLTE(FieldStartFrom, v))
 }
 
 // SubscribedAtEQ applies the EQ predicate on the "subscribed_at" field.

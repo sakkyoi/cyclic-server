@@ -1227,6 +1227,7 @@ type SubscriptionMutation struct {
 	typ           string
 	id            *uuid.UUID
 	created_at    *time.Time
+	start_from    *time.Time
 	subscribed_at *time.Time
 	left_at       *time.Time
 	clearedFields map[string]struct{}
@@ -1377,6 +1378,42 @@ func (m *SubscriptionMutation) OldCreatedAt(ctx context.Context) (v time.Time, e
 // ResetCreatedAt resets all changes to the "created_at" field.
 func (m *SubscriptionMutation) ResetCreatedAt() {
 	m.created_at = nil
+}
+
+// SetStartFrom sets the "start_from" field.
+func (m *SubscriptionMutation) SetStartFrom(t time.Time) {
+	m.start_from = &t
+}
+
+// StartFrom returns the value of the "start_from" field in the mutation.
+func (m *SubscriptionMutation) StartFrom() (r time.Time, exists bool) {
+	v := m.start_from
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStartFrom returns the old "start_from" field's value of the Subscription entity.
+// If the Subscription object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionMutation) OldStartFrom(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStartFrom is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStartFrom requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartFrom: %w", err)
+	}
+	return oldValue.StartFrom, nil
+}
+
+// ResetStartFrom resets all changes to the "start_from" field.
+func (m *SubscriptionMutation) ResetStartFrom() {
+	m.start_from = nil
 }
 
 // SetSubscribedAt sets the "subscribed_at" field.
@@ -1589,9 +1626,12 @@ func (m *SubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.created_at != nil {
 		fields = append(fields, subscription.FieldCreatedAt)
+	}
+	if m.start_from != nil {
+		fields = append(fields, subscription.FieldStartFrom)
 	}
 	if m.subscribed_at != nil {
 		fields = append(fields, subscription.FieldSubscribedAt)
@@ -1609,6 +1649,8 @@ func (m *SubscriptionMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case subscription.FieldCreatedAt:
 		return m.CreatedAt()
+	case subscription.FieldStartFrom:
+		return m.StartFrom()
 	case subscription.FieldSubscribedAt:
 		return m.SubscribedAt()
 	case subscription.FieldLeftAt:
@@ -1624,6 +1666,8 @@ func (m *SubscriptionMutation) OldField(ctx context.Context, name string) (ent.V
 	switch name {
 	case subscription.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
+	case subscription.FieldStartFrom:
+		return m.OldStartFrom(ctx)
 	case subscription.FieldSubscribedAt:
 		return m.OldSubscribedAt(ctx)
 	case subscription.FieldLeftAt:
@@ -1643,6 +1687,13 @@ func (m *SubscriptionMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetCreatedAt(v)
+		return nil
+	case subscription.FieldStartFrom:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStartFrom(v)
 		return nil
 	case subscription.FieldSubscribedAt:
 		v, ok := value.(time.Time)
@@ -1724,6 +1775,9 @@ func (m *SubscriptionMutation) ResetField(name string) error {
 	switch name {
 	case subscription.FieldCreatedAt:
 		m.ResetCreatedAt()
+		return nil
+	case subscription.FieldStartFrom:
+		m.ResetStartFrom()
 		return nil
 	case subscription.FieldSubscribedAt:
 		m.ResetSubscribedAt()

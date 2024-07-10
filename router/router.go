@@ -79,9 +79,6 @@ func build() *gin.Engine {
 		// subscription
 		apiGroup.GET("/subscriptions", jwt.JWT(), a.Subscribe.List)           // list subscriptions (including invitations)
 		apiGroup.PATCH("/subscription/:id", jwt.JWT(), a.Subscribe.Subscribe) // subscribe to a plan
-		// TODO: list invitation
-		// TODO: subscribe (if user is invited)
-		// TODO: leave subscription (must not be the owner)
 	}
 
 	return r

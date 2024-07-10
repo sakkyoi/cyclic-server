@@ -17,6 +17,8 @@ const (
 	FieldID = "id"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// FieldStartFrom holds the string denoting the start_from field in the database.
+	FieldStartFrom = "start_from"
 	// FieldSubscribedAt holds the string denoting the subscribed_at field in the database.
 	FieldSubscribedAt = "subscribed_at"
 	// FieldLeftAt holds the string denoting the left_at field in the database.
@@ -47,6 +49,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldCreatedAt,
+	FieldStartFrom,
 	FieldSubscribedAt,
 	FieldLeftAt,
 }
@@ -91,6 +94,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByStartFrom orders the results by the start_from field.
+func ByStartFrom(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldStartFrom, opts...).ToFunc()
 }
 
 // BySubscribedAt orders the results by the subscribed_at field.

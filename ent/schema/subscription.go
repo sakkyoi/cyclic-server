@@ -22,6 +22,7 @@ func (Subscription) Fields() []ent.Field {
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),
+		field.Time("start_from"),
 		field.Time("subscribed_at").
 			Optional(),
 		field.Time("left_at").
@@ -46,6 +47,7 @@ func (Subscription) Edges() []ent.Edge {
 // Indexes of the Subscription.
 func (Subscription) Indexes() []ent.Index {
 	return []ent.Index{
+		// add left_at to the index to let the plan is re-subscribable
 		index.Edges("user", "plan").
 			Unique(),
 	}

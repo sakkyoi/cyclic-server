@@ -31,6 +31,20 @@ func (su *SubscriptionUpdate) Where(ps ...predicate.Subscription) *SubscriptionU
 	return su
 }
 
+// SetStartFrom sets the "start_from" field.
+func (su *SubscriptionUpdate) SetStartFrom(t time.Time) *SubscriptionUpdate {
+	su.mutation.SetStartFrom(t)
+	return su
+}
+
+// SetNillableStartFrom sets the "start_from" field if the given value is not nil.
+func (su *SubscriptionUpdate) SetNillableStartFrom(t *time.Time) *SubscriptionUpdate {
+	if t != nil {
+		su.SetStartFrom(*t)
+	}
+	return su
+}
+
 // SetSubscribedAt sets the "subscribed_at" field.
 func (su *SubscriptionUpdate) SetSubscribedAt(t time.Time) *SubscriptionUpdate {
 	su.mutation.SetSubscribedAt(t)
@@ -160,6 +174,9 @@ func (su *SubscriptionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := su.mutation.StartFrom(); ok {
+		_spec.SetField(subscription.FieldStartFrom, field.TypeTime, value)
+	}
 	if value, ok := su.mutation.SubscribedAt(); ok {
 		_spec.SetField(subscription.FieldSubscribedAt, field.TypeTime, value)
 	}
@@ -248,6 +265,20 @@ type SubscriptionUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *SubscriptionMutation
+}
+
+// SetStartFrom sets the "start_from" field.
+func (suo *SubscriptionUpdateOne) SetStartFrom(t time.Time) *SubscriptionUpdateOne {
+	suo.mutation.SetStartFrom(t)
+	return suo
+}
+
+// SetNillableStartFrom sets the "start_from" field if the given value is not nil.
+func (suo *SubscriptionUpdateOne) SetNillableStartFrom(t *time.Time) *SubscriptionUpdateOne {
+	if t != nil {
+		suo.SetStartFrom(*t)
+	}
+	return suo
 }
 
 // SetSubscribedAt sets the "subscribed_at" field.
@@ -408,6 +439,9 @@ func (suo *SubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Subscript
 				ps[i](selector)
 			}
 		}
+	}
+	if value, ok := suo.mutation.StartFrom(); ok {
+		_spec.SetField(subscription.FieldStartFrom, field.TypeTime, value)
 	}
 	if value, ok := suo.mutation.SubscribedAt(); ok {
 		_spec.SetField(subscription.FieldSubscribedAt, field.TypeTime, value)
