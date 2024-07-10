@@ -6,6 +6,7 @@ import (
 	"context"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
+	"cyclic/ent/record"
 	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 	"errors"
@@ -28,6 +29,7 @@ const (
 
 	// Node types.
 	TypePlan         = "Plan"
+	TypeRecord       = "Record"
 	TypeSubscription = "Subscription"
 	TypeUser         = "User"
 )
@@ -1220,24 +1222,575 @@ func (m *PlanMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Plan edge %s", name)
 }
 
+// RecordMutation represents an operation that mutates the Record nodes in the graph.
+type RecordMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	declare_for         *time.Time
+	confirmed_at        *time.Time
+	remark              *string
+	clearedFields       map[string]struct{}
+	subscription        *uuid.UUID
+	clearedsubscription bool
+	done                bool
+	oldValue            func(context.Context) (*Record, error)
+	predicates          []predicate.Record
+}
+
+var _ ent.Mutation = (*RecordMutation)(nil)
+
+// recordOption allows management of the mutation configuration using functional options.
+type recordOption func(*RecordMutation)
+
+// newRecordMutation creates new mutation for the Record entity.
+func newRecordMutation(c config, op Op, opts ...recordOption) *RecordMutation {
+	m := &RecordMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRecord,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRecordID sets the ID field of the mutation.
+func withRecordID(id uuid.UUID) recordOption {
+	return func(m *RecordMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Record
+		)
+		m.oldValue = func(ctx context.Context) (*Record, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Record.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRecord sets the old Record of the mutation.
+func withRecord(node *Record) recordOption {
+	return func(m *RecordMutation) {
+		m.oldValue = func(context.Context) (*Record, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RecordMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RecordMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Record entities.
+func (m *RecordMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RecordMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RecordMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Record.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetDeclareFor sets the "declare_for" field.
+func (m *RecordMutation) SetDeclareFor(t time.Time) {
+	m.declare_for = &t
+}
+
+// DeclareFor returns the value of the "declare_for" field in the mutation.
+func (m *RecordMutation) DeclareFor() (r time.Time, exists bool) {
+	v := m.declare_for
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeclareFor returns the old "declare_for" field's value of the Record entity.
+// If the Record object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecordMutation) OldDeclareFor(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeclareFor is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeclareFor requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeclareFor: %w", err)
+	}
+	return oldValue.DeclareFor, nil
+}
+
+// ResetDeclareFor resets all changes to the "declare_for" field.
+func (m *RecordMutation) ResetDeclareFor() {
+	m.declare_for = nil
+}
+
+// SetConfirmedAt sets the "confirmed_at" field.
+func (m *RecordMutation) SetConfirmedAt(t time.Time) {
+	m.confirmed_at = &t
+}
+
+// ConfirmedAt returns the value of the "confirmed_at" field in the mutation.
+func (m *RecordMutation) ConfirmedAt() (r time.Time, exists bool) {
+	v := m.confirmed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConfirmedAt returns the old "confirmed_at" field's value of the Record entity.
+// If the Record object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecordMutation) OldConfirmedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConfirmedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConfirmedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConfirmedAt: %w", err)
+	}
+	return oldValue.ConfirmedAt, nil
+}
+
+// ClearConfirmedAt clears the value of the "confirmed_at" field.
+func (m *RecordMutation) ClearConfirmedAt() {
+	m.confirmed_at = nil
+	m.clearedFields[record.FieldConfirmedAt] = struct{}{}
+}
+
+// ConfirmedAtCleared returns if the "confirmed_at" field was cleared in this mutation.
+func (m *RecordMutation) ConfirmedAtCleared() bool {
+	_, ok := m.clearedFields[record.FieldConfirmedAt]
+	return ok
+}
+
+// ResetConfirmedAt resets all changes to the "confirmed_at" field.
+func (m *RecordMutation) ResetConfirmedAt() {
+	m.confirmed_at = nil
+	delete(m.clearedFields, record.FieldConfirmedAt)
+}
+
+// SetRemark sets the "remark" field.
+func (m *RecordMutation) SetRemark(s string) {
+	m.remark = &s
+}
+
+// Remark returns the value of the "remark" field in the mutation.
+func (m *RecordMutation) Remark() (r string, exists bool) {
+	v := m.remark
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRemark returns the old "remark" field's value of the Record entity.
+// If the Record object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecordMutation) OldRemark(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRemark is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRemark requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRemark: %w", err)
+	}
+	return oldValue.Remark, nil
+}
+
+// ClearRemark clears the value of the "remark" field.
+func (m *RecordMutation) ClearRemark() {
+	m.remark = nil
+	m.clearedFields[record.FieldRemark] = struct{}{}
+}
+
+// RemarkCleared returns if the "remark" field was cleared in this mutation.
+func (m *RecordMutation) RemarkCleared() bool {
+	_, ok := m.clearedFields[record.FieldRemark]
+	return ok
+}
+
+// ResetRemark resets all changes to the "remark" field.
+func (m *RecordMutation) ResetRemark() {
+	m.remark = nil
+	delete(m.clearedFields, record.FieldRemark)
+}
+
+// SetSubscriptionID sets the "subscription" edge to the Subscription entity by id.
+func (m *RecordMutation) SetSubscriptionID(id uuid.UUID) {
+	m.subscription = &id
+}
+
+// ClearSubscription clears the "subscription" edge to the Subscription entity.
+func (m *RecordMutation) ClearSubscription() {
+	m.clearedsubscription = true
+}
+
+// SubscriptionCleared reports if the "subscription" edge to the Subscription entity was cleared.
+func (m *RecordMutation) SubscriptionCleared() bool {
+	return m.clearedsubscription
+}
+
+// SubscriptionID returns the "subscription" edge ID in the mutation.
+func (m *RecordMutation) SubscriptionID() (id uuid.UUID, exists bool) {
+	if m.subscription != nil {
+		return *m.subscription, true
+	}
+	return
+}
+
+// SubscriptionIDs returns the "subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// SubscriptionID instead. It exists only for internal usage by the builders.
+func (m *RecordMutation) SubscriptionIDs() (ids []uuid.UUID) {
+	if id := m.subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetSubscription resets all changes to the "subscription" edge.
+func (m *RecordMutation) ResetSubscription() {
+	m.subscription = nil
+	m.clearedsubscription = false
+}
+
+// Where appends a list predicates to the RecordMutation builder.
+func (m *RecordMutation) Where(ps ...predicate.Record) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RecordMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RecordMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Record, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RecordMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RecordMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Record).
+func (m *RecordMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RecordMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.declare_for != nil {
+		fields = append(fields, record.FieldDeclareFor)
+	}
+	if m.confirmed_at != nil {
+		fields = append(fields, record.FieldConfirmedAt)
+	}
+	if m.remark != nil {
+		fields = append(fields, record.FieldRemark)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RecordMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case record.FieldDeclareFor:
+		return m.DeclareFor()
+	case record.FieldConfirmedAt:
+		return m.ConfirmedAt()
+	case record.FieldRemark:
+		return m.Remark()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RecordMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case record.FieldDeclareFor:
+		return m.OldDeclareFor(ctx)
+	case record.FieldConfirmedAt:
+		return m.OldConfirmedAt(ctx)
+	case record.FieldRemark:
+		return m.OldRemark(ctx)
+	}
+	return nil, fmt.Errorf("unknown Record field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RecordMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case record.FieldDeclareFor:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeclareFor(v)
+		return nil
+	case record.FieldConfirmedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConfirmedAt(v)
+		return nil
+	case record.FieldRemark:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRemark(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Record field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RecordMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RecordMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RecordMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Record numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RecordMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(record.FieldConfirmedAt) {
+		fields = append(fields, record.FieldConfirmedAt)
+	}
+	if m.FieldCleared(record.FieldRemark) {
+		fields = append(fields, record.FieldRemark)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RecordMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RecordMutation) ClearField(name string) error {
+	switch name {
+	case record.FieldConfirmedAt:
+		m.ClearConfirmedAt()
+		return nil
+	case record.FieldRemark:
+		m.ClearRemark()
+		return nil
+	}
+	return fmt.Errorf("unknown Record nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RecordMutation) ResetField(name string) error {
+	switch name {
+	case record.FieldDeclareFor:
+		m.ResetDeclareFor()
+		return nil
+	case record.FieldConfirmedAt:
+		m.ResetConfirmedAt()
+		return nil
+	case record.FieldRemark:
+		m.ResetRemark()
+		return nil
+	}
+	return fmt.Errorf("unknown Record field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RecordMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.subscription != nil {
+		edges = append(edges, record.EdgeSubscription)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RecordMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case record.EdgeSubscription:
+		if id := m.subscription; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RecordMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RecordMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RecordMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedsubscription {
+		edges = append(edges, record.EdgeSubscription)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RecordMutation) EdgeCleared(name string) bool {
+	switch name {
+	case record.EdgeSubscription:
+		return m.clearedsubscription
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RecordMutation) ClearEdge(name string) error {
+	switch name {
+	case record.EdgeSubscription:
+		m.ClearSubscription()
+		return nil
+	}
+	return fmt.Errorf("unknown Record unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RecordMutation) ResetEdge(name string) error {
+	switch name {
+	case record.EdgeSubscription:
+		m.ResetSubscription()
+		return nil
+	}
+	return fmt.Errorf("unknown Record edge %s", name)
+}
+
 // SubscriptionMutation represents an operation that mutates the Subscription nodes in the graph.
 type SubscriptionMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *uuid.UUID
-	created_at    *time.Time
-	start_from    *time.Time
-	subscribed_at *time.Time
-	left_at       *time.Time
-	clearedFields map[string]struct{}
-	user          *uuid.UUID
-	cleareduser   bool
-	plan          *uuid.UUID
-	clearedplan   bool
-	done          bool
-	oldValue      func(context.Context) (*Subscription, error)
-	predicates    []predicate.Subscription
+	op             Op
+	typ            string
+	id             *uuid.UUID
+	created_at     *time.Time
+	start_from     *time.Time
+	subscribed_at  *time.Time
+	left_at        *time.Time
+	clearedFields  map[string]struct{}
+	user           *uuid.UUID
+	cleareduser    bool
+	plan           *uuid.UUID
+	clearedplan    bool
+	records        map[uuid.UUID]struct{}
+	removedrecords map[uuid.UUID]struct{}
+	clearedrecords bool
+	done           bool
+	oldValue       func(context.Context) (*Subscription, error)
+	predicates     []predicate.Subscription
 }
 
 var _ ent.Mutation = (*SubscriptionMutation)(nil)
@@ -1592,6 +2145,60 @@ func (m *SubscriptionMutation) ResetPlan() {
 	m.clearedplan = false
 }
 
+// AddRecordIDs adds the "records" edge to the Record entity by ids.
+func (m *SubscriptionMutation) AddRecordIDs(ids ...uuid.UUID) {
+	if m.records == nil {
+		m.records = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.records[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRecords clears the "records" edge to the Record entity.
+func (m *SubscriptionMutation) ClearRecords() {
+	m.clearedrecords = true
+}
+
+// RecordsCleared reports if the "records" edge to the Record entity was cleared.
+func (m *SubscriptionMutation) RecordsCleared() bool {
+	return m.clearedrecords
+}
+
+// RemoveRecordIDs removes the "records" edge to the Record entity by IDs.
+func (m *SubscriptionMutation) RemoveRecordIDs(ids ...uuid.UUID) {
+	if m.removedrecords == nil {
+		m.removedrecords = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.records, ids[i])
+		m.removedrecords[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRecords returns the removed IDs of the "records" edge to the Record entity.
+func (m *SubscriptionMutation) RemovedRecordsIDs() (ids []uuid.UUID) {
+	for id := range m.removedrecords {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RecordsIDs returns the "records" edge IDs in the mutation.
+func (m *SubscriptionMutation) RecordsIDs() (ids []uuid.UUID) {
+	for id := range m.records {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRecords resets all changes to the "records" edge.
+func (m *SubscriptionMutation) ResetRecords() {
+	m.records = nil
+	m.clearedrecords = false
+	m.removedrecords = nil
+}
+
 // Where appends a list predicates to the SubscriptionMutation builder.
 func (m *SubscriptionMutation) Where(ps ...predicate.Subscription) {
 	m.predicates = append(m.predicates, ps...)
@@ -1791,12 +2398,15 @@ func (m *SubscriptionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *SubscriptionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.user != nil {
 		edges = append(edges, subscription.EdgeUser)
 	}
 	if m.plan != nil {
 		edges = append(edges, subscription.EdgePlan)
+	}
+	if m.records != nil {
+		edges = append(edges, subscription.EdgeRecords)
 	}
 	return edges
 }
@@ -1813,30 +2423,50 @@ func (m *SubscriptionMutation) AddedIDs(name string) []ent.Value {
 		if id := m.plan; id != nil {
 			return []ent.Value{*id}
 		}
+	case subscription.EdgeRecords:
+		ids := make([]ent.Value, 0, len(m.records))
+		for id := range m.records {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *SubscriptionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.removedrecords != nil {
+		edges = append(edges, subscription.EdgeRecords)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *SubscriptionMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case subscription.EdgeRecords:
+		ids := make([]ent.Value, 0, len(m.removedrecords))
+		for id := range m.removedrecords {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *SubscriptionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.cleareduser {
 		edges = append(edges, subscription.EdgeUser)
 	}
 	if m.clearedplan {
 		edges = append(edges, subscription.EdgePlan)
+	}
+	if m.clearedrecords {
+		edges = append(edges, subscription.EdgeRecords)
 	}
 	return edges
 }
@@ -1849,6 +2479,8 @@ func (m *SubscriptionMutation) EdgeCleared(name string) bool {
 		return m.cleareduser
 	case subscription.EdgePlan:
 		return m.clearedplan
+	case subscription.EdgeRecords:
+		return m.clearedrecords
 	}
 	return false
 }
@@ -1876,6 +2508,9 @@ func (m *SubscriptionMutation) ResetEdge(name string) error {
 		return nil
 	case subscription.EdgePlan:
 		m.ResetPlan()
+		return nil
+	case subscription.EdgeRecords:
+		m.ResetRecords()
 		return nil
 	}
 	return fmt.Errorf("unknown Subscription edge %s", name)

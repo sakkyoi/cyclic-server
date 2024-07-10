@@ -6,8 +6,10 @@ import (
 	"context"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
+	"cyclic/ent/record"
 	"cyclic/ent/subscription"
 	"cyclic/ent/user"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -20,13 +22,14 @@ import (
 // SubscriptionQuery is the builder for querying Subscription entities.
 type SubscriptionQuery struct {
 	config
-	ctx        *QueryContext
-	order      []subscription.OrderOption
-	inters     []Interceptor
-	predicates []predicate.Subscription
-	withUser   *UserQuery
-	withPlan   *PlanQuery
-	withFKs    bool
+	ctx         *QueryContext
+	order       []subscription.OrderOption
+	inters      []Interceptor
+	predicates  []predicate.Subscription
+	withUser    *UserQuery
+	withPlan    *PlanQuery
+	withRecords *RecordQuery
+	withFKs     bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -100,6 +103,28 @@ func (sq *SubscriptionQuery) QueryPlan() *PlanQuery {
 			sqlgraph.From(subscription.Table, subscription.FieldID, selector),
 			sqlgraph.To(plan.Table, plan.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, subscription.PlanTable, subscription.PlanColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRecords chains the current query on the "records" edge.
+func (sq *SubscriptionQuery) QueryRecords() *RecordQuery {
+	query := (&RecordClient{config: sq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := sq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := sq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscription.Table, subscription.FieldID, selector),
+			sqlgraph.To(record.Table, record.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscription.RecordsTable, subscription.RecordsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(sq.driver.Dialect(), step)
 		return fromU, nil
@@ -294,13 +319,14 @@ func (sq *SubscriptionQuery) Clone() *SubscriptionQuery {
 		return nil
 	}
 	return &SubscriptionQuery{
-		config:     sq.config,
-		ctx:        sq.ctx.Clone(),
-		order:      append([]subscription.OrderOption{}, sq.order...),
-		inters:     append([]Interceptor{}, sq.inters...),
-		predicates: append([]predicate.Subscription{}, sq.predicates...),
-		withUser:   sq.withUser.Clone(),
-		withPlan:   sq.withPlan.Clone(),
+		config:      sq.config,
+		ctx:         sq.ctx.Clone(),
+		order:       append([]subscription.OrderOption{}, sq.order...),
+		inters:      append([]Interceptor{}, sq.inters...),
+		predicates:  append([]predicate.Subscription{}, sq.predicates...),
+		withUser:    sq.withUser.Clone(),
+		withPlan:    sq.withPlan.Clone(),
+		withRecords: sq.withRecords.Clone(),
 		// clone intermediate query.
 		sql:  sq.sql.Clone(),
 		path: sq.path,
@@ -326,6 +352,17 @@ func (sq *SubscriptionQuery) WithPlan(opts ...func(*PlanQuery)) *SubscriptionQue
 		opt(query)
 	}
 	sq.withPlan = query
+	return sq
+}
+
+// WithRecords tells the query-builder to eager-load the nodes that are connected to
+// the "records" edge. The optional arguments are used to configure the query builder of the edge.
+func (sq *SubscriptionQuery) WithRecords(opts ...func(*RecordQuery)) *SubscriptionQuery {
+	query := (&RecordClient{config: sq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	sq.withRecords = query
 	return sq
 }
 
@@ -408,9 +445,10 @@ func (sq *SubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 		nodes       = []*Subscription{}
 		withFKs     = sq.withFKs
 		_spec       = sq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			sq.withUser != nil,
 			sq.withPlan != nil,
+			sq.withRecords != nil,
 		}
 	)
 	if sq.withUser != nil || sq.withPlan != nil {
@@ -446,6 +484,13 @@ func (sq *SubscriptionQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if query := sq.withPlan; query != nil {
 		if err := sq.loadPlan(ctx, query, nodes, nil,
 			func(n *Subscription, e *Plan) { n.Edges.Plan = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := sq.withRecords; query != nil {
+		if err := sq.loadRecords(ctx, query, nodes,
+			func(n *Subscription) { n.Edges.Records = []*Record{} },
+			func(n *Subscription, e *Record) { n.Edges.Records = append(n.Edges.Records, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -513,6 +558,37 @@ func (sq *SubscriptionQuery) loadPlan(ctx context.Context, query *PlanQuery, nod
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
+	}
+	return nil
+}
+func (sq *SubscriptionQuery) loadRecords(ctx context.Context, query *RecordQuery, nodes []*Subscription, init func(*Subscription), assign func(*Subscription, *Record)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[uuid.UUID]*Subscription)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.Record(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(subscription.RecordsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.subscription_records
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "subscription_records" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "subscription_records" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

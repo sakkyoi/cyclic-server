@@ -6,6 +6,7 @@ import (
 	"context"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
+	"cyclic/ent/record"
 	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 	"errors"
@@ -107,6 +108,21 @@ func (su *SubscriptionUpdate) SetPlan(p *Plan) *SubscriptionUpdate {
 	return su.SetPlanID(p.ID)
 }
 
+// AddRecordIDs adds the "records" edge to the Record entity by IDs.
+func (su *SubscriptionUpdate) AddRecordIDs(ids ...uuid.UUID) *SubscriptionUpdate {
+	su.mutation.AddRecordIDs(ids...)
+	return su
+}
+
+// AddRecords adds the "records" edges to the Record entity.
+func (su *SubscriptionUpdate) AddRecords(r ...*Record) *SubscriptionUpdate {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return su.AddRecordIDs(ids...)
+}
+
 // Mutation returns the SubscriptionMutation object of the builder.
 func (su *SubscriptionUpdate) Mutation() *SubscriptionMutation {
 	return su.mutation
@@ -122,6 +138,27 @@ func (su *SubscriptionUpdate) ClearUser() *SubscriptionUpdate {
 func (su *SubscriptionUpdate) ClearPlan() *SubscriptionUpdate {
 	su.mutation.ClearPlan()
 	return su
+}
+
+// ClearRecords clears all "records" edges to the Record entity.
+func (su *SubscriptionUpdate) ClearRecords() *SubscriptionUpdate {
+	su.mutation.ClearRecords()
+	return su
+}
+
+// RemoveRecordIDs removes the "records" edge to Record entities by IDs.
+func (su *SubscriptionUpdate) RemoveRecordIDs(ids ...uuid.UUID) *SubscriptionUpdate {
+	su.mutation.RemoveRecordIDs(ids...)
+	return su
+}
+
+// RemoveRecords removes "records" edges to Record entities.
+func (su *SubscriptionUpdate) RemoveRecords(r ...*Record) *SubscriptionUpdate {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return su.RemoveRecordIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -247,6 +284,51 @@ func (su *SubscriptionUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if su.mutation.RecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscription.RecordsTable,
+			Columns: []string{subscription.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(record.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.RemovedRecordsIDs(); len(nodes) > 0 && !su.mutation.RecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscription.RecordsTable,
+			Columns: []string{subscription.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(record.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := su.mutation.RecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscription.RecordsTable,
+			Columns: []string{subscription.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(record.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, su.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{subscription.Label}
@@ -343,6 +425,21 @@ func (suo *SubscriptionUpdateOne) SetPlan(p *Plan) *SubscriptionUpdateOne {
 	return suo.SetPlanID(p.ID)
 }
 
+// AddRecordIDs adds the "records" edge to the Record entity by IDs.
+func (suo *SubscriptionUpdateOne) AddRecordIDs(ids ...uuid.UUID) *SubscriptionUpdateOne {
+	suo.mutation.AddRecordIDs(ids...)
+	return suo
+}
+
+// AddRecords adds the "records" edges to the Record entity.
+func (suo *SubscriptionUpdateOne) AddRecords(r ...*Record) *SubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return suo.AddRecordIDs(ids...)
+}
+
 // Mutation returns the SubscriptionMutation object of the builder.
 func (suo *SubscriptionUpdateOne) Mutation() *SubscriptionMutation {
 	return suo.mutation
@@ -358,6 +455,27 @@ func (suo *SubscriptionUpdateOne) ClearUser() *SubscriptionUpdateOne {
 func (suo *SubscriptionUpdateOne) ClearPlan() *SubscriptionUpdateOne {
 	suo.mutation.ClearPlan()
 	return suo
+}
+
+// ClearRecords clears all "records" edges to the Record entity.
+func (suo *SubscriptionUpdateOne) ClearRecords() *SubscriptionUpdateOne {
+	suo.mutation.ClearRecords()
+	return suo
+}
+
+// RemoveRecordIDs removes the "records" edge to Record entities by IDs.
+func (suo *SubscriptionUpdateOne) RemoveRecordIDs(ids ...uuid.UUID) *SubscriptionUpdateOne {
+	suo.mutation.RemoveRecordIDs(ids...)
+	return suo
+}
+
+// RemoveRecords removes "records" edges to Record entities.
+func (suo *SubscriptionUpdateOne) RemoveRecords(r ...*Record) *SubscriptionUpdateOne {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return suo.RemoveRecordIDs(ids...)
 }
 
 // Where appends a list predicates to the SubscriptionUpdate builder.
@@ -506,6 +624,51 @@ func (suo *SubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *Subscript
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(plan.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if suo.mutation.RecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscription.RecordsTable,
+			Columns: []string{subscription.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(record.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.RemovedRecordsIDs(); len(nodes) > 0 && !suo.mutation.RecordsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscription.RecordsTable,
+			Columns: []string{subscription.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(record.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := suo.mutation.RecordsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscription.RecordsTable,
+			Columns: []string{subscription.RecordsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(record.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -42,9 +42,11 @@ type SubscriptionEdges struct {
 	User *User `json:"user,omitempty"`
 	// Plan holds the value of the plan edge.
 	Plan *Plan `json:"plan,omitempty"`
+	// Records holds the value of the records edge.
+	Records []*Record `json:"records,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -67,6 +69,15 @@ func (e SubscriptionEdges) PlanOrErr() (*Plan, error) {
 		return nil, &NotFoundError{label: plan.Label}
 	}
 	return nil, &NotLoadedError{edge: "plan"}
+}
+
+// RecordsOrErr returns the Records value or an error if the edge
+// was not loaded in eager-loading.
+func (e SubscriptionEdges) RecordsOrErr() ([]*Record, error) {
+	if e.loadedTypes[2] {
+		return e.Records, nil
+	}
+	return nil, &NotLoadedError{edge: "records"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -162,6 +173,11 @@ func (s *Subscription) QueryUser() *UserQuery {
 // QueryPlan queries the "plan" edge of the Subscription entity.
 func (s *Subscription) QueryPlan() *PlanQuery {
 	return NewSubscriptionClient(s.config).QueryPlan(s)
+}
+
+// QueryRecords queries the "records" edge of the Subscription entity.
+func (s *Subscription) QueryRecords() *RecordQuery {
+	return NewSubscriptionClient(s.config).QueryRecords(s)
 }
 
 // Update returns a builder for updating this Subscription.

@@ -39,6 +39,28 @@ var (
 			},
 		},
 	}
+	// RecordsColumns holds the columns for the "records" table.
+	RecordsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "declare_for", Type: field.TypeTime},
+		{Name: "confirmed_at", Type: field.TypeTime, Nullable: true},
+		{Name: "remark", Type: field.TypeString, Nullable: true},
+		{Name: "subscription_records", Type: field.TypeUUID, Nullable: true},
+	}
+	// RecordsTable holds the schema information for the "records" table.
+	RecordsTable = &schema.Table{
+		Name:       "records",
+		Columns:    RecordsColumns,
+		PrimaryKey: []*schema.Column{RecordsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "records_subscriptions_records",
+				Columns:    []*schema.Column{RecordsColumns[4]},
+				RefColumns: []*schema.Column{SubscriptionsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// SubscriptionsColumns holds the columns for the "subscriptions" table.
 	SubscriptionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -95,6 +117,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		PlansTable,
+		RecordsTable,
 		SubscriptionsTable,
 		UsersTable,
 	}
@@ -102,6 +125,7 @@ var (
 
 func init() {
 	PlansTable.ForeignKeys[0].RefTable = UsersTable
+	RecordsTable.ForeignKeys[0].RefTable = SubscriptionsTable
 	SubscriptionsTable.ForeignKeys[0].RefTable = PlansTable
 	SubscriptionsTable.ForeignKeys[1].RefTable = UsersTable
 }

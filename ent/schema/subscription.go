@@ -41,6 +41,7 @@ func (Subscription) Edges() []ent.Edge {
 			Ref("subscriptions").
 			Unique().
 			Required(),
+		edge.To("records", Record.Type),
 	}
 }
 

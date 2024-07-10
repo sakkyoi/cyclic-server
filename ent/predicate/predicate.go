@@ -9,6 +9,9 @@ import (
 // Plan is the predicate function for plan builders.
 type Plan func(*sql.Selector)
 
+// Record is the predicate function for record builders.
+type Record func(*sql.Selector)
+
 // Subscription is the predicate function for subscription builders.
 type Subscription func(*sql.Selector)
 

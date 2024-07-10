@@ -20,6 +20,18 @@ func (f PlanFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PlanMutation", m)
 }
 
+// The RecordFunc type is an adapter to allow the use of ordinary
+// function as Record mutator.
+type RecordFunc func(context.Context, *ent.RecordMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f RecordFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.RecordMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.RecordMutation", m)
+}
+
 // The SubscriptionFunc type is an adapter to allow the use of ordinary
 // function as Subscription mutator.
 type SubscriptionFunc func(context.Context, *ent.SubscriptionMutation) (ent.Value, error)

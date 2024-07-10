@@ -4,6 +4,7 @@ package ent
 
 import (
 	"cyclic/ent/plan"
+	"cyclic/ent/record"
 	"cyclic/ent/schema"
 	"cyclic/ent/subscription"
 	"cyclic/ent/user"
@@ -40,6 +41,12 @@ func init() {
 	planDescID := planFields[0].Descriptor()
 	// plan.DefaultID holds the default value on creation for the id field.
 	plan.DefaultID = planDescID.Default.(func() uuid.UUID)
+	recordFields := schema.Record{}.Fields()
+	_ = recordFields
+	// recordDescID is the schema descriptor for id field.
+	recordDescID := recordFields[0].Descriptor()
+	// record.DefaultID holds the default value on creation for the id field.
+	record.DefaultID = recordDescID.Default.(func() uuid.UUID)
 	subscriptionFields := schema.Subscription{}.Fields()
 	_ = subscriptionFields
 	// subscriptionDescCreatedAt is the schema descriptor for created_at field.

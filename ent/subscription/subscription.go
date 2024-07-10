@@ -27,6 +27,8 @@ const (
 	EdgeUser = "user"
 	// EdgePlan holds the string denoting the plan edge name in mutations.
 	EdgePlan = "plan"
+	// EdgeRecords holds the string denoting the records edge name in mutations.
+	EdgeRecords = "records"
 	// Table holds the table name of the subscription in the database.
 	Table = "subscriptions"
 	// UserTable is the table that holds the user relation/edge.
@@ -43,6 +45,13 @@ const (
 	PlanInverseTable = "plans"
 	// PlanColumn is the table column denoting the plan relation/edge.
 	PlanColumn = "plan_subscriptions"
+	// RecordsTable is the table that holds the records relation/edge.
+	RecordsTable = "records"
+	// RecordsInverseTable is the table name for the Record entity.
+	// It exists in this package in order to avoid circular dependency with the "record" package.
+	RecordsInverseTable = "records"
+	// RecordsColumn is the table column denoting the records relation/edge.
+	RecordsColumn = "subscription_records"
 )
 
 // Columns holds all SQL columns for subscription fields.
@@ -124,6 +133,20 @@ func ByPlanField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newPlanStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByRecordsCount orders the results by records count.
+func ByRecordsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRecordsStep(), opts...)
+	}
+}
+
+// ByRecords orders the results by records terms.
+func ByRecords(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRecordsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -136,5 +159,12 @@ func newPlanStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PlanInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, PlanTable, PlanColumn),
+	)
+}
+func newRecordsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RecordsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RecordsTable, RecordsColumn),
 	)
 }

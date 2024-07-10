@@ -12,6 +12,7 @@ import (
 	"cyclic/ent/migrate"
 
 	"cyclic/ent/plan"
+	"cyclic/ent/record"
 	"cyclic/ent/subscription"
 	"cyclic/ent/user"
 
@@ -29,6 +30,8 @@ type Client struct {
 	Schema *migrate.Schema
 	// Plan is the client for interacting with the Plan builders.
 	Plan *PlanClient
+	// Record is the client for interacting with the Record builders.
+	Record *RecordClient
 	// Subscription is the client for interacting with the Subscription builders.
 	Subscription *SubscriptionClient
 	// User is the client for interacting with the User builders.
@@ -45,6 +48,7 @@ func NewClient(opts ...Option) *Client {
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Plan = NewPlanClient(c.config)
+	c.Record = NewRecordClient(c.config)
 	c.Subscription = NewSubscriptionClient(c.config)
 	c.User = NewUserClient(c.config)
 }
@@ -140,6 +144,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ctx:          ctx,
 		config:       cfg,
 		Plan:         NewPlanClient(cfg),
+		Record:       NewRecordClient(cfg),
 		Subscription: NewSubscriptionClient(cfg),
 		User:         NewUserClient(cfg),
 	}, nil
@@ -162,6 +167,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ctx:          ctx,
 		config:       cfg,
 		Plan:         NewPlanClient(cfg),
+		Record:       NewRecordClient(cfg),
 		Subscription: NewSubscriptionClient(cfg),
 		User:         NewUserClient(cfg),
 	}, nil
@@ -193,6 +199,7 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	c.Plan.Use(hooks...)
+	c.Record.Use(hooks...)
 	c.Subscription.Use(hooks...)
 	c.User.Use(hooks...)
 }
@@ -201,6 +208,7 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Plan.Intercept(interceptors...)
+	c.Record.Intercept(interceptors...)
 	c.Subscription.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
 }
@@ -210,6 +218,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 	switch m := m.(type) {
 	case *PlanMutation:
 		return c.Plan.mutate(ctx, m)
+	case *RecordMutation:
+		return c.Record.mutate(ctx, m)
 	case *SubscriptionMutation:
 		return c.Subscription.mutate(ctx, m)
 	case *UserMutation:
@@ -384,6 +394,155 @@ func (c *PlanClient) mutate(ctx context.Context, m *PlanMutation) (Value, error)
 	}
 }
 
+// RecordClient is a client for the Record schema.
+type RecordClient struct {
+	config
+}
+
+// NewRecordClient returns a client for the Record from the given config.
+func NewRecordClient(c config) *RecordClient {
+	return &RecordClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `record.Hooks(f(g(h())))`.
+func (c *RecordClient) Use(hooks ...Hook) {
+	c.hooks.Record = append(c.hooks.Record, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `record.Intercept(f(g(h())))`.
+func (c *RecordClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Record = append(c.inters.Record, interceptors...)
+}
+
+// Create returns a builder for creating a Record entity.
+func (c *RecordClient) Create() *RecordCreate {
+	mutation := newRecordMutation(c.config, OpCreate)
+	return &RecordCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Record entities.
+func (c *RecordClient) CreateBulk(builders ...*RecordCreate) *RecordCreateBulk {
+	return &RecordCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RecordClient) MapCreateBulk(slice any, setFunc func(*RecordCreate, int)) *RecordCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RecordCreateBulk{err: fmt.Errorf("calling to RecordClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RecordCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RecordCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Record.
+func (c *RecordClient) Update() *RecordUpdate {
+	mutation := newRecordMutation(c.config, OpUpdate)
+	return &RecordUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RecordClient) UpdateOne(r *Record) *RecordUpdateOne {
+	mutation := newRecordMutation(c.config, OpUpdateOne, withRecord(r))
+	return &RecordUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RecordClient) UpdateOneID(id uuid.UUID) *RecordUpdateOne {
+	mutation := newRecordMutation(c.config, OpUpdateOne, withRecordID(id))
+	return &RecordUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Record.
+func (c *RecordClient) Delete() *RecordDelete {
+	mutation := newRecordMutation(c.config, OpDelete)
+	return &RecordDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RecordClient) DeleteOne(r *Record) *RecordDeleteOne {
+	return c.DeleteOneID(r.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RecordClient) DeleteOneID(id uuid.UUID) *RecordDeleteOne {
+	builder := c.Delete().Where(record.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RecordDeleteOne{builder}
+}
+
+// Query returns a query builder for Record.
+func (c *RecordClient) Query() *RecordQuery {
+	return &RecordQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRecord},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Record entity by its id.
+func (c *RecordClient) Get(ctx context.Context, id uuid.UUID) (*Record, error) {
+	return c.Query().Where(record.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RecordClient) GetX(ctx context.Context, id uuid.UUID) *Record {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QuerySubscription queries the subscription edge of a Record.
+func (c *RecordClient) QuerySubscription(r *Record) *SubscriptionQuery {
+	query := (&SubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := r.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(record.Table, record.FieldID, id),
+			sqlgraph.To(subscription.Table, subscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, record.SubscriptionTable, record.SubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(r.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RecordClient) Hooks() []Hook {
+	return c.hooks.Record
+}
+
+// Interceptors returns the client interceptors.
+func (c *RecordClient) Interceptors() []Interceptor {
+	return c.inters.Record
+}
+
+func (c *RecordClient) mutate(ctx context.Context, m *RecordMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RecordCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RecordUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RecordUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RecordDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Record mutation op: %q", m.Op())
+	}
+}
+
 // SubscriptionClient is a client for the Subscription schema.
 type SubscriptionClient struct {
 	config
@@ -517,6 +676,22 @@ func (c *SubscriptionClient) QueryPlan(s *Subscription) *PlanQuery {
 			sqlgraph.From(subscription.Table, subscription.FieldID, id),
 			sqlgraph.To(plan.Table, plan.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, subscription.PlanTable, subscription.PlanColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRecords queries the records edge of a Subscription.
+func (c *SubscriptionClient) QueryRecords(s *Subscription) *RecordQuery {
+	query := (&RecordClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscription.Table, subscription.FieldID, id),
+			sqlgraph.To(record.Table, record.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscription.RecordsTable, subscription.RecordsColumn),
 		)
 		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
 		return fromV, nil
@@ -717,9 +892,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Plan, Subscription, User []ent.Hook
+		Plan, Record, Subscription, User []ent.Hook
 	}
 	inters struct {
-		Plan, Subscription, User []ent.Interceptor
+		Plan, Record, Subscription, User []ent.Interceptor
 	}
 )
