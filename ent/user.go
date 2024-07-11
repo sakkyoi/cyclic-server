@@ -43,9 +43,11 @@ type UserEdges struct {
 	Plans []*Plan `json:"plans,omitempty"`
 	// Subscriptions holds the value of the subscriptions edge.
 	Subscriptions []*Subscription `json:"subscriptions,omitempty"`
+	// Payments holds the value of the payments edge.
+	Payments []*Payment `json:"payments,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // PlansOrErr returns the Plans value or an error if the edge
@@ -64,6 +66,15 @@ func (e UserEdges) SubscriptionsOrErr() ([]*Subscription, error) {
 		return e.Subscriptions, nil
 	}
 	return nil, &NotLoadedError{edge: "subscriptions"}
+}
+
+// PaymentsOrErr returns the Payments value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) PaymentsOrErr() ([]*Payment, error) {
+	if e.loadedTypes[2] {
+		return e.Payments, nil
+	}
+	return nil, &NotLoadedError{edge: "payments"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -163,6 +174,11 @@ func (u *User) QueryPlans() *PlanQuery {
 // QuerySubscriptions queries the "subscriptions" edge of the User entity.
 func (u *User) QuerySubscriptions() *SubscriptionQuery {
 	return NewUserClient(u.config).QuerySubscriptions(u)
+}
+
+// QueryPayments queries the "payments" edge of the User entity.
+func (u *User) QueryPayments() *PaymentQuery {
+	return NewUserClient(u.config).QueryPayments(u)
 }
 
 // Update returns a builder for updating this User.

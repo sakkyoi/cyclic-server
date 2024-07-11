@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"cyclic/ent/payment"
 	"cyclic/ent/record"
 	"cyclic/ent/subscription"
 	"fmt"
@@ -25,9 +26,12 @@ type Record struct {
 	ConfirmedAt time.Time `json:"confirmed_at,omitempty"`
 	// Remark holds the value of the "remark" field.
 	Remark string `json:"remark,omitempty"`
+	// TrackingCode holds the value of the "tracking_code" field.
+	TrackingCode string `json:"tracking_code,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RecordQuery when eager-loading is set.
 	Edges                RecordEdges `json:"edges"`
+	payment_records      *uuid.UUID
 	subscription_records *uuid.UUID
 	selectValues         sql.SelectValues
 }
@@ -36,9 +40,11 @@ type Record struct {
 type RecordEdges struct {
 	// Subscription holds the value of the subscription edge.
 	Subscription *Subscription `json:"subscription,omitempty"`
+	// Payment holds the value of the payment edge.
+	Payment *Payment `json:"payment,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // SubscriptionOrErr returns the Subscription value or an error if the edge
@@ -52,18 +58,31 @@ func (e RecordEdges) SubscriptionOrErr() (*Subscription, error) {
 	return nil, &NotLoadedError{edge: "subscription"}
 }
 
+// PaymentOrErr returns the Payment value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RecordEdges) PaymentOrErr() (*Payment, error) {
+	if e.Payment != nil {
+		return e.Payment, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: payment.Label}
+	}
+	return nil, &NotLoadedError{edge: "payment"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Record) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case record.FieldRemark:
+		case record.FieldRemark, record.FieldTrackingCode:
 			values[i] = new(sql.NullString)
 		case record.FieldDeclareFor, record.FieldConfirmedAt:
 			values[i] = new(sql.NullTime)
 		case record.FieldID:
 			values[i] = new(uuid.UUID)
-		case record.ForeignKeys[0]: // subscription_records
+		case record.ForeignKeys[0]: // payment_records
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case record.ForeignKeys[1]: // subscription_records
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
@@ -104,7 +123,20 @@ func (r *Record) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				r.Remark = value.String
 			}
+		case record.FieldTrackingCode:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field tracking_code", values[i])
+			} else if value.Valid {
+				r.TrackingCode = value.String
+			}
 		case record.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field payment_records", values[i])
+			} else if value.Valid {
+				r.payment_records = new(uuid.UUID)
+				*r.payment_records = *value.S.(*uuid.UUID)
+			}
+		case record.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullScanner); !ok {
 				return fmt.Errorf("unexpected type %T for field subscription_records", values[i])
 			} else if value.Valid {
@@ -127,6 +159,11 @@ func (r *Record) Value(name string) (ent.Value, error) {
 // QuerySubscription queries the "subscription" edge of the Record entity.
 func (r *Record) QuerySubscription() *SubscriptionQuery {
 	return NewRecordClient(r.config).QuerySubscription(r)
+}
+
+// QueryPayment queries the "payment" edge of the Record entity.
+func (r *Record) QueryPayment() *PaymentQuery {
+	return NewRecordClient(r.config).QueryPayment(r)
 }
 
 // Update returns a builder for updating this Record.
@@ -160,6 +197,9 @@ func (r *Record) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("remark=")
 	builder.WriteString(r.Remark)
+	builder.WriteString(", ")
+	builder.WriteString("tracking_code=")
+	builder.WriteString(r.TrackingCode)
 	builder.WriteByte(')')
 	return builder.String()
 }

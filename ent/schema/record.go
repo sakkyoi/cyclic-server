@@ -23,6 +23,7 @@ func (Record) Fields() []ent.Field {
 			Optional(),
 		field.String("remark").
 			Optional(),
+		field.String("tracking_code"),
 	}
 }
 
@@ -32,5 +33,9 @@ func (Record) Edges() []ent.Edge {
 		edge.From("subscription", Subscription.Type).
 			Ref("records").
 			Unique(),
+		edge.From("payment", Payment.Type).
+			Ref("records").
+			Unique().
+			Required(),
 	}
 }

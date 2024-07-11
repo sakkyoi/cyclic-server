@@ -1,6 +1,7 @@
 package api
 
 import (
+	"cyclic/router/api/payment"
 	"cyclic/router/api/plan"
 	"cyclic/router/api/record"
 	"cyclic/router/api/signup"
@@ -11,6 +12,7 @@ import (
 type API struct {
 	Signup    *signup.Signup
 	User      *user.User
+	Payment   *payment.Payment
 	Plan      *plan.Plan
 	Subscribe *subscribe.Subscribe
 	Record    *record.Record

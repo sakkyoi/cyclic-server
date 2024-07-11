@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"cyclic/ent/payment"
 	"cyclic/ent/predicate"
 	"cyclic/ent/record"
 	"cyclic/ent/subscription"
@@ -70,6 +71,20 @@ func (ru *RecordUpdate) ClearRemark() *RecordUpdate {
 	return ru
 }
 
+// SetTrackingCode sets the "tracking_code" field.
+func (ru *RecordUpdate) SetTrackingCode(s string) *RecordUpdate {
+	ru.mutation.SetTrackingCode(s)
+	return ru
+}
+
+// SetNillableTrackingCode sets the "tracking_code" field if the given value is not nil.
+func (ru *RecordUpdate) SetNillableTrackingCode(s *string) *RecordUpdate {
+	if s != nil {
+		ru.SetTrackingCode(*s)
+	}
+	return ru
+}
+
 // SetSubscriptionID sets the "subscription" edge to the Subscription entity by ID.
 func (ru *RecordUpdate) SetSubscriptionID(id uuid.UUID) *RecordUpdate {
 	ru.mutation.SetSubscriptionID(id)
@@ -89,6 +104,17 @@ func (ru *RecordUpdate) SetSubscription(s *Subscription) *RecordUpdate {
 	return ru.SetSubscriptionID(s.ID)
 }
 
+// SetPaymentID sets the "payment" edge to the Payment entity by ID.
+func (ru *RecordUpdate) SetPaymentID(id uuid.UUID) *RecordUpdate {
+	ru.mutation.SetPaymentID(id)
+	return ru
+}
+
+// SetPayment sets the "payment" edge to the Payment entity.
+func (ru *RecordUpdate) SetPayment(p *Payment) *RecordUpdate {
+	return ru.SetPaymentID(p.ID)
+}
+
 // Mutation returns the RecordMutation object of the builder.
 func (ru *RecordUpdate) Mutation() *RecordMutation {
 	return ru.mutation
@@ -97,6 +123,12 @@ func (ru *RecordUpdate) Mutation() *RecordMutation {
 // ClearSubscription clears the "subscription" edge to the Subscription entity.
 func (ru *RecordUpdate) ClearSubscription() *RecordUpdate {
 	ru.mutation.ClearSubscription()
+	return ru
+}
+
+// ClearPayment clears the "payment" edge to the Payment entity.
+func (ru *RecordUpdate) ClearPayment() *RecordUpdate {
+	ru.mutation.ClearPayment()
 	return ru
 }
 
@@ -127,7 +159,18 @@ func (ru *RecordUpdate) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (ru *RecordUpdate) check() error {
+	if _, ok := ru.mutation.PaymentID(); ru.mutation.PaymentCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Record.payment"`)
+	}
+	return nil
+}
+
 func (ru *RecordUpdate) sqlSave(ctx context.Context) (n int, err error) {
+	if err := ru.check(); err != nil {
+		return n, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(record.Table, record.Columns, sqlgraph.NewFieldSpec(record.FieldID, field.TypeUUID))
 	if ps := ru.mutation.predicates; len(ps) > 0 {
 		_spec.Predicate = func(selector *sql.Selector) {
@@ -147,6 +190,9 @@ func (ru *RecordUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if ru.mutation.RemarkCleared() {
 		_spec.ClearField(record.FieldRemark, field.TypeString)
+	}
+	if value, ok := ru.mutation.TrackingCode(); ok {
+		_spec.SetField(record.FieldTrackingCode, field.TypeString, value)
 	}
 	if ru.mutation.SubscriptionCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -170,6 +216,35 @@ func (ru *RecordUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ru.mutation.PaymentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   record.PaymentTable,
+			Columns: []string{record.PaymentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(payment.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ru.mutation.PaymentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   record.PaymentTable,
+			Columns: []string{record.PaymentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(payment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -237,6 +312,20 @@ func (ruo *RecordUpdateOne) ClearRemark() *RecordUpdateOne {
 	return ruo
 }
 
+// SetTrackingCode sets the "tracking_code" field.
+func (ruo *RecordUpdateOne) SetTrackingCode(s string) *RecordUpdateOne {
+	ruo.mutation.SetTrackingCode(s)
+	return ruo
+}
+
+// SetNillableTrackingCode sets the "tracking_code" field if the given value is not nil.
+func (ruo *RecordUpdateOne) SetNillableTrackingCode(s *string) *RecordUpdateOne {
+	if s != nil {
+		ruo.SetTrackingCode(*s)
+	}
+	return ruo
+}
+
 // SetSubscriptionID sets the "subscription" edge to the Subscription entity by ID.
 func (ruo *RecordUpdateOne) SetSubscriptionID(id uuid.UUID) *RecordUpdateOne {
 	ruo.mutation.SetSubscriptionID(id)
@@ -256,6 +345,17 @@ func (ruo *RecordUpdateOne) SetSubscription(s *Subscription) *RecordUpdateOne {
 	return ruo.SetSubscriptionID(s.ID)
 }
 
+// SetPaymentID sets the "payment" edge to the Payment entity by ID.
+func (ruo *RecordUpdateOne) SetPaymentID(id uuid.UUID) *RecordUpdateOne {
+	ruo.mutation.SetPaymentID(id)
+	return ruo
+}
+
+// SetPayment sets the "payment" edge to the Payment entity.
+func (ruo *RecordUpdateOne) SetPayment(p *Payment) *RecordUpdateOne {
+	return ruo.SetPaymentID(p.ID)
+}
+
 // Mutation returns the RecordMutation object of the builder.
 func (ruo *RecordUpdateOne) Mutation() *RecordMutation {
 	return ruo.mutation
@@ -264,6 +364,12 @@ func (ruo *RecordUpdateOne) Mutation() *RecordMutation {
 // ClearSubscription clears the "subscription" edge to the Subscription entity.
 func (ruo *RecordUpdateOne) ClearSubscription() *RecordUpdateOne {
 	ruo.mutation.ClearSubscription()
+	return ruo
+}
+
+// ClearPayment clears the "payment" edge to the Payment entity.
+func (ruo *RecordUpdateOne) ClearPayment() *RecordUpdateOne {
+	ruo.mutation.ClearPayment()
 	return ruo
 }
 
@@ -307,7 +413,18 @@ func (ruo *RecordUpdateOne) ExecX(ctx context.Context) {
 	}
 }
 
+// check runs all checks and user-defined validators on the builder.
+func (ruo *RecordUpdateOne) check() error {
+	if _, ok := ruo.mutation.PaymentID(); ruo.mutation.PaymentCleared() && !ok {
+		return errors.New(`ent: clearing a required unique edge "Record.payment"`)
+	}
+	return nil
+}
+
 func (ruo *RecordUpdateOne) sqlSave(ctx context.Context) (_node *Record, err error) {
+	if err := ruo.check(); err != nil {
+		return _node, err
+	}
 	_spec := sqlgraph.NewUpdateSpec(record.Table, record.Columns, sqlgraph.NewFieldSpec(record.FieldID, field.TypeUUID))
 	id, ok := ruo.mutation.ID()
 	if !ok {
@@ -345,6 +462,9 @@ func (ruo *RecordUpdateOne) sqlSave(ctx context.Context) (_node *Record, err err
 	if ruo.mutation.RemarkCleared() {
 		_spec.ClearField(record.FieldRemark, field.TypeString)
 	}
+	if value, ok := ruo.mutation.TrackingCode(); ok {
+		_spec.SetField(record.FieldTrackingCode, field.TypeString, value)
+	}
 	if ruo.mutation.SubscriptionCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -367,6 +487,35 @@ func (ruo *RecordUpdateOne) sqlSave(ctx context.Context) (_node *Record, err err
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscription.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if ruo.mutation.PaymentCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   record.PaymentTable,
+			Columns: []string{record.PaymentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(payment.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := ruo.mutation.PaymentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   record.PaymentTable,
+			Columns: []string{record.PaymentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(payment.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"cyclic/ent/payment"
 	"cyclic/ent/plan"
 	"cyclic/ent/predicate"
 	"cyclic/ent/record"
@@ -28,11 +29,578 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
+	TypePayment      = "Payment"
 	TypePlan         = "Plan"
 	TypeRecord       = "Record"
 	TypeSubscription = "Subscription"
 	TypeUser         = "User"
 )
+
+// PaymentMutation represents an operation that mutates the Payment nodes in the graph.
+type PaymentMutation struct {
+	config
+	op             Op
+	typ            string
+	id             *uuid.UUID
+	name           *string
+	details        *string
+	created_at     *time.Time
+	clearedFields  map[string]struct{}
+	user           *uuid.UUID
+	cleareduser    bool
+	records        *uuid.UUID
+	clearedrecords bool
+	done           bool
+	oldValue       func(context.Context) (*Payment, error)
+	predicates     []predicate.Payment
+}
+
+var _ ent.Mutation = (*PaymentMutation)(nil)
+
+// paymentOption allows management of the mutation configuration using functional options.
+type paymentOption func(*PaymentMutation)
+
+// newPaymentMutation creates new mutation for the Payment entity.
+func newPaymentMutation(c config, op Op, opts ...paymentOption) *PaymentMutation {
+	m := &PaymentMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePayment,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPaymentID sets the ID field of the mutation.
+func withPaymentID(id uuid.UUID) paymentOption {
+	return func(m *PaymentMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Payment
+		)
+		m.oldValue = func(ctx context.Context) (*Payment, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Payment.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPayment sets the old Payment of the mutation.
+func withPayment(node *Payment) paymentOption {
+	return func(m *PaymentMutation) {
+		m.oldValue = func(context.Context) (*Payment, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PaymentMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PaymentMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Payment entities.
+func (m *PaymentMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *PaymentMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *PaymentMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Payment.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *PaymentMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *PaymentMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Payment entity.
+// If the Payment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *PaymentMutation) ResetName() {
+	m.name = nil
+}
+
+// SetDetails sets the "details" field.
+func (m *PaymentMutation) SetDetails(s string) {
+	m.details = &s
+}
+
+// Details returns the value of the "details" field in the mutation.
+func (m *PaymentMutation) Details() (r string, exists bool) {
+	v := m.details
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDetails returns the old "details" field's value of the Payment entity.
+// If the Payment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentMutation) OldDetails(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDetails is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDetails requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDetails: %w", err)
+	}
+	return oldValue.Details, nil
+}
+
+// ResetDetails resets all changes to the "details" field.
+func (m *PaymentMutation) ResetDetails() {
+	m.details = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *PaymentMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *PaymentMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Payment entity.
+// If the Payment object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *PaymentMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUserID sets the "user" edge to the User entity by id.
+func (m *PaymentMutation) SetUserID(id uuid.UUID) {
+	m.user = &id
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *PaymentMutation) ClearUser() {
+	m.cleareduser = true
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *PaymentMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserID returns the "user" edge ID in the mutation.
+func (m *PaymentMutation) UserID() (id uuid.UUID, exists bool) {
+	if m.user != nil {
+		return *m.user, true
+	}
+	return
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *PaymentMutation) UserIDs() (ids []uuid.UUID) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *PaymentMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetRecordsID sets the "records" edge to the Record entity by id.
+func (m *PaymentMutation) SetRecordsID(id uuid.UUID) {
+	m.records = &id
+}
+
+// ClearRecords clears the "records" edge to the Record entity.
+func (m *PaymentMutation) ClearRecords() {
+	m.clearedrecords = true
+}
+
+// RecordsCleared reports if the "records" edge to the Record entity was cleared.
+func (m *PaymentMutation) RecordsCleared() bool {
+	return m.clearedrecords
+}
+
+// RecordsID returns the "records" edge ID in the mutation.
+func (m *PaymentMutation) RecordsID() (id uuid.UUID, exists bool) {
+	if m.records != nil {
+		return *m.records, true
+	}
+	return
+}
+
+// RecordsIDs returns the "records" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RecordsID instead. It exists only for internal usage by the builders.
+func (m *PaymentMutation) RecordsIDs() (ids []uuid.UUID) {
+	if id := m.records; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRecords resets all changes to the "records" edge.
+func (m *PaymentMutation) ResetRecords() {
+	m.records = nil
+	m.clearedrecords = false
+}
+
+// Where appends a list predicates to the PaymentMutation builder.
+func (m *PaymentMutation) Where(ps ...predicate.Payment) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the PaymentMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *PaymentMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Payment, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *PaymentMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *PaymentMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Payment).
+func (m *PaymentMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *PaymentMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.name != nil {
+		fields = append(fields, payment.FieldName)
+	}
+	if m.details != nil {
+		fields = append(fields, payment.FieldDetails)
+	}
+	if m.created_at != nil {
+		fields = append(fields, payment.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *PaymentMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case payment.FieldName:
+		return m.Name()
+	case payment.FieldDetails:
+		return m.Details()
+	case payment.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *PaymentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case payment.FieldName:
+		return m.OldName(ctx)
+	case payment.FieldDetails:
+		return m.OldDetails(ctx)
+	case payment.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown Payment field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PaymentMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case payment.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case payment.FieldDetails:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDetails(v)
+		return nil
+	case payment.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Payment field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *PaymentMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *PaymentMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PaymentMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Payment numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *PaymentMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *PaymentMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PaymentMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Payment nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *PaymentMutation) ResetField(name string) error {
+	switch name {
+	case payment.FieldName:
+		m.ResetName()
+		return nil
+	case payment.FieldDetails:
+		m.ResetDetails()
+		return nil
+	case payment.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Payment field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *PaymentMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.user != nil {
+		edges = append(edges, payment.EdgeUser)
+	}
+	if m.records != nil {
+		edges = append(edges, payment.EdgeRecords)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *PaymentMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case payment.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case payment.EdgeRecords:
+		if id := m.records; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *PaymentMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *PaymentMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *PaymentMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareduser {
+		edges = append(edges, payment.EdgeUser)
+	}
+	if m.clearedrecords {
+		edges = append(edges, payment.EdgeRecords)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *PaymentMutation) EdgeCleared(name string) bool {
+	switch name {
+	case payment.EdgeUser:
+		return m.cleareduser
+	case payment.EdgeRecords:
+		return m.clearedrecords
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *PaymentMutation) ClearEdge(name string) error {
+	switch name {
+	case payment.EdgeUser:
+		m.ClearUser()
+		return nil
+	case payment.EdgeRecords:
+		m.ClearRecords()
+		return nil
+	}
+	return fmt.Errorf("unknown Payment unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *PaymentMutation) ResetEdge(name string) error {
+	switch name {
+	case payment.EdgeUser:
+		m.ResetUser()
+		return nil
+	case payment.EdgeRecords:
+		m.ResetRecords()
+		return nil
+	}
+	return fmt.Errorf("unknown Payment edge %s", name)
+}
 
 // PlanMutation represents an operation that mutates the Plan nodes in the graph.
 type PlanMutation struct {
@@ -1231,9 +1799,12 @@ type RecordMutation struct {
 	declare_for         *time.Time
 	confirmed_at        *time.Time
 	remark              *string
+	tracking_code       *string
 	clearedFields       map[string]struct{}
 	subscription        *uuid.UUID
 	clearedsubscription bool
+	payment             *uuid.UUID
+	clearedpayment      bool
 	done                bool
 	oldValue            func(context.Context) (*Record, error)
 	predicates          []predicate.Record
@@ -1477,6 +2048,42 @@ func (m *RecordMutation) ResetRemark() {
 	delete(m.clearedFields, record.FieldRemark)
 }
 
+// SetTrackingCode sets the "tracking_code" field.
+func (m *RecordMutation) SetTrackingCode(s string) {
+	m.tracking_code = &s
+}
+
+// TrackingCode returns the value of the "tracking_code" field in the mutation.
+func (m *RecordMutation) TrackingCode() (r string, exists bool) {
+	v := m.tracking_code
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTrackingCode returns the old "tracking_code" field's value of the Record entity.
+// If the Record object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RecordMutation) OldTrackingCode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTrackingCode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTrackingCode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTrackingCode: %w", err)
+	}
+	return oldValue.TrackingCode, nil
+}
+
+// ResetTrackingCode resets all changes to the "tracking_code" field.
+func (m *RecordMutation) ResetTrackingCode() {
+	m.tracking_code = nil
+}
+
 // SetSubscriptionID sets the "subscription" edge to the Subscription entity by id.
 func (m *RecordMutation) SetSubscriptionID(id uuid.UUID) {
 	m.subscription = &id
@@ -1516,6 +2123,45 @@ func (m *RecordMutation) ResetSubscription() {
 	m.clearedsubscription = false
 }
 
+// SetPaymentID sets the "payment" edge to the Payment entity by id.
+func (m *RecordMutation) SetPaymentID(id uuid.UUID) {
+	m.payment = &id
+}
+
+// ClearPayment clears the "payment" edge to the Payment entity.
+func (m *RecordMutation) ClearPayment() {
+	m.clearedpayment = true
+}
+
+// PaymentCleared reports if the "payment" edge to the Payment entity was cleared.
+func (m *RecordMutation) PaymentCleared() bool {
+	return m.clearedpayment
+}
+
+// PaymentID returns the "payment" edge ID in the mutation.
+func (m *RecordMutation) PaymentID() (id uuid.UUID, exists bool) {
+	if m.payment != nil {
+		return *m.payment, true
+	}
+	return
+}
+
+// PaymentIDs returns the "payment" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// PaymentID instead. It exists only for internal usage by the builders.
+func (m *RecordMutation) PaymentIDs() (ids []uuid.UUID) {
+	if id := m.payment; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPayment resets all changes to the "payment" edge.
+func (m *RecordMutation) ResetPayment() {
+	m.payment = nil
+	m.clearedpayment = false
+}
+
 // Where appends a list predicates to the RecordMutation builder.
 func (m *RecordMutation) Where(ps ...predicate.Record) {
 	m.predicates = append(m.predicates, ps...)
@@ -1550,7 +2196,7 @@ func (m *RecordMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RecordMutation) Fields() []string {
-	fields := make([]string, 0, 3)
+	fields := make([]string, 0, 4)
 	if m.declare_for != nil {
 		fields = append(fields, record.FieldDeclareFor)
 	}
@@ -1559,6 +2205,9 @@ func (m *RecordMutation) Fields() []string {
 	}
 	if m.remark != nil {
 		fields = append(fields, record.FieldRemark)
+	}
+	if m.tracking_code != nil {
+		fields = append(fields, record.FieldTrackingCode)
 	}
 	return fields
 }
@@ -1574,6 +2223,8 @@ func (m *RecordMutation) Field(name string) (ent.Value, bool) {
 		return m.ConfirmedAt()
 	case record.FieldRemark:
 		return m.Remark()
+	case record.FieldTrackingCode:
+		return m.TrackingCode()
 	}
 	return nil, false
 }
@@ -1589,6 +2240,8 @@ func (m *RecordMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldConfirmedAt(ctx)
 	case record.FieldRemark:
 		return m.OldRemark(ctx)
+	case record.FieldTrackingCode:
+		return m.OldTrackingCode(ctx)
 	}
 	return nil, fmt.Errorf("unknown Record field %s", name)
 }
@@ -1618,6 +2271,13 @@ func (m *RecordMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRemark(v)
+		return nil
+	case record.FieldTrackingCode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTrackingCode(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Record field %s", name)
@@ -1692,15 +2352,21 @@ func (m *RecordMutation) ResetField(name string) error {
 	case record.FieldRemark:
 		m.ResetRemark()
 		return nil
+	case record.FieldTrackingCode:
+		m.ResetTrackingCode()
+		return nil
 	}
 	return fmt.Errorf("unknown Record field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RecordMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.subscription != nil {
 		edges = append(edges, record.EdgeSubscription)
+	}
+	if m.payment != nil {
+		edges = append(edges, record.EdgePayment)
 	}
 	return edges
 }
@@ -1713,13 +2379,17 @@ func (m *RecordMutation) AddedIDs(name string) []ent.Value {
 		if id := m.subscription; id != nil {
 			return []ent.Value{*id}
 		}
+	case record.EdgePayment:
+		if id := m.payment; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RecordMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -1731,9 +2401,12 @@ func (m *RecordMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RecordMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedsubscription {
 		edges = append(edges, record.EdgeSubscription)
+	}
+	if m.clearedpayment {
+		edges = append(edges, record.EdgePayment)
 	}
 	return edges
 }
@@ -1744,6 +2417,8 @@ func (m *RecordMutation) EdgeCleared(name string) bool {
 	switch name {
 	case record.EdgeSubscription:
 		return m.clearedsubscription
+	case record.EdgePayment:
+		return m.clearedpayment
 	}
 	return false
 }
@@ -1755,6 +2430,9 @@ func (m *RecordMutation) ClearEdge(name string) error {
 	case record.EdgeSubscription:
 		m.ClearSubscription()
 		return nil
+	case record.EdgePayment:
+		m.ClearPayment()
+		return nil
 	}
 	return fmt.Errorf("unknown Record unique edge %s", name)
 }
@@ -1765,6 +2443,9 @@ func (m *RecordMutation) ResetEdge(name string) error {
 	switch name {
 	case record.EdgeSubscription:
 		m.ResetSubscription()
+		return nil
+	case record.EdgePayment:
+		m.ResetPayment()
 		return nil
 	}
 	return fmt.Errorf("unknown Record edge %s", name)
@@ -2536,6 +3217,9 @@ type UserMutation struct {
 	subscriptions        map[uuid.UUID]struct{}
 	removedsubscriptions map[uuid.UUID]struct{}
 	clearedsubscriptions bool
+	payments             map[uuid.UUID]struct{}
+	removedpayments      map[uuid.UUID]struct{}
+	clearedpayments      bool
 	done                 bool
 	oldValue             func(context.Context) (*User, error)
 	predicates           []predicate.User
@@ -3044,6 +3728,60 @@ func (m *UserMutation) ResetSubscriptions() {
 	m.removedsubscriptions = nil
 }
 
+// AddPaymentIDs adds the "payments" edge to the Payment entity by ids.
+func (m *UserMutation) AddPaymentIDs(ids ...uuid.UUID) {
+	if m.payments == nil {
+		m.payments = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.payments[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPayments clears the "payments" edge to the Payment entity.
+func (m *UserMutation) ClearPayments() {
+	m.clearedpayments = true
+}
+
+// PaymentsCleared reports if the "payments" edge to the Payment entity was cleared.
+func (m *UserMutation) PaymentsCleared() bool {
+	return m.clearedpayments
+}
+
+// RemovePaymentIDs removes the "payments" edge to the Payment entity by IDs.
+func (m *UserMutation) RemovePaymentIDs(ids ...uuid.UUID) {
+	if m.removedpayments == nil {
+		m.removedpayments = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.payments, ids[i])
+		m.removedpayments[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPayments returns the removed IDs of the "payments" edge to the Payment entity.
+func (m *UserMutation) RemovedPaymentsIDs() (ids []uuid.UUID) {
+	for id := range m.removedpayments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PaymentsIDs returns the "payments" edge IDs in the mutation.
+func (m *UserMutation) PaymentsIDs() (ids []uuid.UUID) {
+	for id := range m.payments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPayments resets all changes to the "payments" edge.
+func (m *UserMutation) ResetPayments() {
+	m.payments = nil
+	m.clearedpayments = false
+	m.removedpayments = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -3300,12 +4038,15 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.plans != nil {
 		edges = append(edges, user.EdgePlans)
 	}
 	if m.subscriptions != nil {
 		edges = append(edges, user.EdgeSubscriptions)
+	}
+	if m.payments != nil {
+		edges = append(edges, user.EdgePayments)
 	}
 	return edges
 }
@@ -3326,18 +4067,27 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgePayments:
+		ids := make([]ent.Value, 0, len(m.payments))
+		for id := range m.payments {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedplans != nil {
 		edges = append(edges, user.EdgePlans)
 	}
 	if m.removedsubscriptions != nil {
 		edges = append(edges, user.EdgeSubscriptions)
+	}
+	if m.removedpayments != nil {
+		edges = append(edges, user.EdgePayments)
 	}
 	return edges
 }
@@ -3358,18 +4108,27 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgePayments:
+		ids := make([]ent.Value, 0, len(m.removedpayments))
+		for id := range m.removedpayments {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedplans {
 		edges = append(edges, user.EdgePlans)
 	}
 	if m.clearedsubscriptions {
 		edges = append(edges, user.EdgeSubscriptions)
+	}
+	if m.clearedpayments {
+		edges = append(edges, user.EdgePayments)
 	}
 	return edges
 }
@@ -3382,6 +4141,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedplans
 	case user.EdgeSubscriptions:
 		return m.clearedsubscriptions
+	case user.EdgePayments:
+		return m.clearedpayments
 	}
 	return false
 }
@@ -3403,6 +4164,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeSubscriptions:
 		m.ResetSubscriptions()
+		return nil
+	case user.EdgePayments:
+		m.ResetPayments()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

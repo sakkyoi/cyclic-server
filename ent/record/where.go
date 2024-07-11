@@ -71,6 +71,11 @@ func Remark(v string) predicate.Record {
 	return predicate.Record(sql.FieldEQ(FieldRemark, v))
 }
 
+// TrackingCode applies equality check predicate on the "tracking_code" field. It's identical to TrackingCodeEQ.
+func TrackingCode(v string) predicate.Record {
+	return predicate.Record(sql.FieldEQ(FieldTrackingCode, v))
+}
+
 // DeclareForEQ applies the EQ predicate on the "declare_for" field.
 func DeclareForEQ(v time.Time) predicate.Record {
 	return predicate.Record(sql.FieldEQ(FieldDeclareFor, v))
@@ -236,6 +241,71 @@ func RemarkContainsFold(v string) predicate.Record {
 	return predicate.Record(sql.FieldContainsFold(FieldRemark, v))
 }
 
+// TrackingCodeEQ applies the EQ predicate on the "tracking_code" field.
+func TrackingCodeEQ(v string) predicate.Record {
+	return predicate.Record(sql.FieldEQ(FieldTrackingCode, v))
+}
+
+// TrackingCodeNEQ applies the NEQ predicate on the "tracking_code" field.
+func TrackingCodeNEQ(v string) predicate.Record {
+	return predicate.Record(sql.FieldNEQ(FieldTrackingCode, v))
+}
+
+// TrackingCodeIn applies the In predicate on the "tracking_code" field.
+func TrackingCodeIn(vs ...string) predicate.Record {
+	return predicate.Record(sql.FieldIn(FieldTrackingCode, vs...))
+}
+
+// TrackingCodeNotIn applies the NotIn predicate on the "tracking_code" field.
+func TrackingCodeNotIn(vs ...string) predicate.Record {
+	return predicate.Record(sql.FieldNotIn(FieldTrackingCode, vs...))
+}
+
+// TrackingCodeGT applies the GT predicate on the "tracking_code" field.
+func TrackingCodeGT(v string) predicate.Record {
+	return predicate.Record(sql.FieldGT(FieldTrackingCode, v))
+}
+
+// TrackingCodeGTE applies the GTE predicate on the "tracking_code" field.
+func TrackingCodeGTE(v string) predicate.Record {
+	return predicate.Record(sql.FieldGTE(FieldTrackingCode, v))
+}
+
+// TrackingCodeLT applies the LT predicate on the "tracking_code" field.
+func TrackingCodeLT(v string) predicate.Record {
+	return predicate.Record(sql.FieldLT(FieldTrackingCode, v))
+}
+
+// TrackingCodeLTE applies the LTE predicate on the "tracking_code" field.
+func TrackingCodeLTE(v string) predicate.Record {
+	return predicate.Record(sql.FieldLTE(FieldTrackingCode, v))
+}
+
+// TrackingCodeContains applies the Contains predicate on the "tracking_code" field.
+func TrackingCodeContains(v string) predicate.Record {
+	return predicate.Record(sql.FieldContains(FieldTrackingCode, v))
+}
+
+// TrackingCodeHasPrefix applies the HasPrefix predicate on the "tracking_code" field.
+func TrackingCodeHasPrefix(v string) predicate.Record {
+	return predicate.Record(sql.FieldHasPrefix(FieldTrackingCode, v))
+}
+
+// TrackingCodeHasSuffix applies the HasSuffix predicate on the "tracking_code" field.
+func TrackingCodeHasSuffix(v string) predicate.Record {
+	return predicate.Record(sql.FieldHasSuffix(FieldTrackingCode, v))
+}
+
+// TrackingCodeEqualFold applies the EqualFold predicate on the "tracking_code" field.
+func TrackingCodeEqualFold(v string) predicate.Record {
+	return predicate.Record(sql.FieldEqualFold(FieldTrackingCode, v))
+}
+
+// TrackingCodeContainsFold applies the ContainsFold predicate on the "tracking_code" field.
+func TrackingCodeContainsFold(v string) predicate.Record {
+	return predicate.Record(sql.FieldContainsFold(FieldTrackingCode, v))
+}
+
 // HasSubscription applies the HasEdge predicate on the "subscription" edge.
 func HasSubscription() predicate.Record {
 	return predicate.Record(func(s *sql.Selector) {
@@ -251,6 +321,29 @@ func HasSubscription() predicate.Record {
 func HasSubscriptionWith(preds ...predicate.Subscription) predicate.Record {
 	return predicate.Record(func(s *sql.Selector) {
 		step := newSubscriptionStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasPayment applies the HasEdge predicate on the "payment" edge.
+func HasPayment() predicate.Record {
+	return predicate.Record(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, PaymentTable, PaymentColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasPaymentWith applies the HasEdge predicate on the "payment" edge with a given conditions (other predicates).
+func HasPaymentWith(preds ...predicate.Payment) predicate.Record {
+	return predicate.Record(func(s *sql.Selector) {
+		step := newPaymentStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

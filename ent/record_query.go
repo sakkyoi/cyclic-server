@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"cyclic/ent/payment"
 	"cyclic/ent/predicate"
 	"cyclic/ent/record"
 	"cyclic/ent/subscription"
@@ -24,6 +25,7 @@ type RecordQuery struct {
 	inters           []Interceptor
 	predicates       []predicate.Record
 	withSubscription *SubscriptionQuery
+	withPayment      *PaymentQuery
 	withFKs          bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -76,6 +78,28 @@ func (rq *RecordQuery) QuerySubscription() *SubscriptionQuery {
 			sqlgraph.From(record.Table, record.FieldID, selector),
 			sqlgraph.To(subscription.Table, subscription.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, record.SubscriptionTable, record.SubscriptionColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryPayment chains the current query on the "payment" edge.
+func (rq *RecordQuery) QueryPayment() *PaymentQuery {
+	query := (&PaymentClient{config: rq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := rq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := rq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(record.Table, record.FieldID, selector),
+			sqlgraph.To(payment.Table, payment.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, record.PaymentTable, record.PaymentColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(rq.driver.Dialect(), step)
 		return fromU, nil
@@ -276,6 +300,7 @@ func (rq *RecordQuery) Clone() *RecordQuery {
 		inters:           append([]Interceptor{}, rq.inters...),
 		predicates:       append([]predicate.Record{}, rq.predicates...),
 		withSubscription: rq.withSubscription.Clone(),
+		withPayment:      rq.withPayment.Clone(),
 		// clone intermediate query.
 		sql:  rq.sql.Clone(),
 		path: rq.path,
@@ -290,6 +315,17 @@ func (rq *RecordQuery) WithSubscription(opts ...func(*SubscriptionQuery)) *Recor
 		opt(query)
 	}
 	rq.withSubscription = query
+	return rq
+}
+
+// WithPayment tells the query-builder to eager-load the nodes that are connected to
+// the "payment" edge. The optional arguments are used to configure the query builder of the edge.
+func (rq *RecordQuery) WithPayment(opts ...func(*PaymentQuery)) *RecordQuery {
+	query := (&PaymentClient{config: rq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	rq.withPayment = query
 	return rq
 }
 
@@ -372,11 +408,12 @@ func (rq *RecordQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Recor
 		nodes       = []*Record{}
 		withFKs     = rq.withFKs
 		_spec       = rq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			rq.withSubscription != nil,
+			rq.withPayment != nil,
 		}
 	)
-	if rq.withSubscription != nil {
+	if rq.withSubscription != nil || rq.withPayment != nil {
 		withFKs = true
 	}
 	if withFKs {
@@ -403,6 +440,12 @@ func (rq *RecordQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Recor
 	if query := rq.withSubscription; query != nil {
 		if err := rq.loadSubscription(ctx, query, nodes, nil,
 			func(n *Record, e *Subscription) { n.Edges.Subscription = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := rq.withPayment; query != nil {
+		if err := rq.loadPayment(ctx, query, nodes, nil,
+			func(n *Record, e *Payment) { n.Edges.Payment = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -434,6 +477,38 @@ func (rq *RecordQuery) loadSubscription(ctx context.Context, query *Subscription
 		nodes, ok := nodeids[n.ID]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "subscription_records" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (rq *RecordQuery) loadPayment(ctx context.Context, query *PaymentQuery, nodes []*Record, init func(*Record), assign func(*Record, *Payment)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Record)
+	for i := range nodes {
+		if nodes[i].payment_records == nil {
+			continue
+		}
+		fk := *nodes[i].payment_records
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(payment.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "payment_records" returned %v`, n.ID)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)

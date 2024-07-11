@@ -68,6 +68,11 @@ func build() *gin.Engine {
 		apiGroup.POST("/auth", a.User.Auth)          // authenticate user (to get JWT token)
 		apiGroup.GET("/user", jwt.JWT(), a.User.Get) // get user profile
 
+		// payment
+		apiGroup.POST("/payment", jwt.JWT(), a.Payment.Add)          // add payment method
+		apiGroup.DELETE("/payment/:id", jwt.JWT(), a.Payment.Remove) // remove payment method
+		apiGroup.GET("/payments", jwt.JWT(), a.Payment.List)         // list payment methods
+
 		// plan
 		apiGroup.POST("/plan", jwt.JWT(), a.Plan.Create)                     // create plan
 		apiGroup.PUT("/plan/:id", jwt.JWT(), a.Plan.Update)                  // update plan

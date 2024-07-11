@@ -19,8 +19,12 @@ const (
 	FieldConfirmedAt = "confirmed_at"
 	// FieldRemark holds the string denoting the remark field in the database.
 	FieldRemark = "remark"
+	// FieldTrackingCode holds the string denoting the tracking_code field in the database.
+	FieldTrackingCode = "tracking_code"
 	// EdgeSubscription holds the string denoting the subscription edge name in mutations.
 	EdgeSubscription = "subscription"
+	// EdgePayment holds the string denoting the payment edge name in mutations.
+	EdgePayment = "payment"
 	// Table holds the table name of the record in the database.
 	Table = "records"
 	// SubscriptionTable is the table that holds the subscription relation/edge.
@@ -30,6 +34,13 @@ const (
 	SubscriptionInverseTable = "subscriptions"
 	// SubscriptionColumn is the table column denoting the subscription relation/edge.
 	SubscriptionColumn = "subscription_records"
+	// PaymentTable is the table that holds the payment relation/edge.
+	PaymentTable = "records"
+	// PaymentInverseTable is the table name for the Payment entity.
+	// It exists in this package in order to avoid circular dependency with the "payment" package.
+	PaymentInverseTable = "payments"
+	// PaymentColumn is the table column denoting the payment relation/edge.
+	PaymentColumn = "payment_records"
 )
 
 // Columns holds all SQL columns for record fields.
@@ -38,11 +49,13 @@ var Columns = []string{
 	FieldDeclareFor,
 	FieldConfirmedAt,
 	FieldRemark,
+	FieldTrackingCode,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "records"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
+	"payment_records",
 	"subscription_records",
 }
 
@@ -89,10 +102,22 @@ func ByRemark(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRemark, opts...).ToFunc()
 }
 
+// ByTrackingCode orders the results by the tracking_code field.
+func ByTrackingCode(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTrackingCode, opts...).ToFunc()
+}
+
 // BySubscriptionField orders the results by subscription field.
 func BySubscriptionField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newSubscriptionStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByPaymentField orders the results by payment field.
+func ByPaymentField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newPaymentStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newSubscriptionStep() *sqlgraph.Step {
@@ -100,5 +125,12 @@ func newSubscriptionStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscriptionInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, SubscriptionTable, SubscriptionColumn),
+	)
+}
+func newPaymentStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(PaymentInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, true, PaymentTable, PaymentColumn),
 	)
 }

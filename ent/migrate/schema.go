@@ -8,6 +8,28 @@ import (
 )
 
 var (
+	// PaymentsColumns holds the columns for the "payments" table.
+	PaymentsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID},
+		{Name: "name", Type: field.TypeString},
+		{Name: "details", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "user_payments", Type: field.TypeUUID},
+	}
+	// PaymentsTable holds the schema information for the "payments" table.
+	PaymentsTable = &schema.Table{
+		Name:       "payments",
+		Columns:    PaymentsColumns,
+		PrimaryKey: []*schema.Column{PaymentsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "payments_users_payments",
+				Columns:    []*schema.Column{PaymentsColumns[4]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// PlansColumns holds the columns for the "plans" table.
 	PlansColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID},
@@ -45,6 +67,8 @@ var (
 		{Name: "declare_for", Type: field.TypeTime},
 		{Name: "confirmed_at", Type: field.TypeTime, Nullable: true},
 		{Name: "remark", Type: field.TypeString, Nullable: true},
+		{Name: "tracking_code", Type: field.TypeString},
+		{Name: "payment_records", Type: field.TypeUUID, Unique: true},
 		{Name: "subscription_records", Type: field.TypeUUID, Nullable: true},
 	}
 	// RecordsTable holds the schema information for the "records" table.
@@ -54,8 +78,14 @@ var (
 		PrimaryKey: []*schema.Column{RecordsColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
+				Symbol:     "records_payments_records",
+				Columns:    []*schema.Column{RecordsColumns[5]},
+				RefColumns: []*schema.Column{PaymentsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
 				Symbol:     "records_subscriptions_records",
-				Columns:    []*schema.Column{RecordsColumns[4]},
+				Columns:    []*schema.Column{RecordsColumns[6]},
 				RefColumns: []*schema.Column{SubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -117,6 +147,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		PaymentsTable,
 		PlansTable,
 		RecordsTable,
 		SubscriptionsTable,
@@ -125,8 +156,10 @@ var (
 )
 
 func init() {
+	PaymentsTable.ForeignKeys[0].RefTable = UsersTable
 	PlansTable.ForeignKeys[0].RefTable = UsersTable
-	RecordsTable.ForeignKeys[0].RefTable = SubscriptionsTable
+	RecordsTable.ForeignKeys[0].RefTable = PaymentsTable
+	RecordsTable.ForeignKeys[1].RefTable = SubscriptionsTable
 	SubscriptionsTable.ForeignKeys[0].RefTable = PlansTable
 	SubscriptionsTable.ForeignKeys[1].RefTable = UsersTable
 }

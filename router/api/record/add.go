@@ -17,6 +17,8 @@ import (
 type AddInput struct {
 	Subscription string `form:"subscription" binding:"required"`
 	DeclareFor   string `form:"declare_for" binding:"required"`
+	Payment      string `form:"payment" binding:"required"`
+	TrackingCode string `form:"tracking_code" binding:"required"`
 	Remark       string `form:"remark"`
 }
 
@@ -36,6 +38,13 @@ func (*Record) Add(c *gin.Context) {
 
 	// parse the subscription id into uuid
 	subscriptionID, err := uuid.Parse(input.Subscription)
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
+		return
+	}
+
+	// parse the payment id into uuid
+	paymentID, err := uuid.Parse(input.Payment)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, model.ErrorResponse{Type: model.ErrorInvalidInput, Error: "invalid input", Detail: err.Error()})
 		return
@@ -100,6 +109,8 @@ func (*Record) Add(c *gin.Context) {
 	result, err := secretary.Minute.Record.Create().
 		SetSubscription(s).
 		SetDeclareFor(end).
+		SetPaymentID(paymentID).
+		SetTrackingCode(input.TrackingCode).
 		SetRemark(input.Remark).
 		Save(c)
 	if err != nil {

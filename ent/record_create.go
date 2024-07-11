@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"cyclic/ent/payment"
 	"cyclic/ent/record"
 	"cyclic/ent/subscription"
 	"errors"
@@ -56,6 +57,12 @@ func (rc *RecordCreate) SetNillableRemark(s *string) *RecordCreate {
 	return rc
 }
 
+// SetTrackingCode sets the "tracking_code" field.
+func (rc *RecordCreate) SetTrackingCode(s string) *RecordCreate {
+	rc.mutation.SetTrackingCode(s)
+	return rc
+}
+
 // SetID sets the "id" field.
 func (rc *RecordCreate) SetID(u uuid.UUID) *RecordCreate {
 	rc.mutation.SetID(u)
@@ -87,6 +94,17 @@ func (rc *RecordCreate) SetNillableSubscriptionID(id *uuid.UUID) *RecordCreate {
 // SetSubscription sets the "subscription" edge to the Subscription entity.
 func (rc *RecordCreate) SetSubscription(s *Subscription) *RecordCreate {
 	return rc.SetSubscriptionID(s.ID)
+}
+
+// SetPaymentID sets the "payment" edge to the Payment entity by ID.
+func (rc *RecordCreate) SetPaymentID(id uuid.UUID) *RecordCreate {
+	rc.mutation.SetPaymentID(id)
+	return rc
+}
+
+// SetPayment sets the "payment" edge to the Payment entity.
+func (rc *RecordCreate) SetPayment(p *Payment) *RecordCreate {
+	return rc.SetPaymentID(p.ID)
 }
 
 // Mutation returns the RecordMutation object of the builder.
@@ -135,6 +153,12 @@ func (rc *RecordCreate) check() error {
 	if _, ok := rc.mutation.DeclareFor(); !ok {
 		return &ValidationError{Name: "declare_for", err: errors.New(`ent: missing required field "Record.declare_for"`)}
 	}
+	if _, ok := rc.mutation.TrackingCode(); !ok {
+		return &ValidationError{Name: "tracking_code", err: errors.New(`ent: missing required field "Record.tracking_code"`)}
+	}
+	if _, ok := rc.mutation.PaymentID(); !ok {
+		return &ValidationError{Name: "payment", err: errors.New(`ent: missing required edge "Record.payment"`)}
+	}
 	return nil
 }
 
@@ -182,6 +206,10 @@ func (rc *RecordCreate) createSpec() (*Record, *sqlgraph.CreateSpec) {
 		_spec.SetField(record.FieldRemark, field.TypeString, value)
 		_node.Remark = value
 	}
+	if value, ok := rc.mutation.TrackingCode(); ok {
+		_spec.SetField(record.FieldTrackingCode, field.TypeString, value)
+		_node.TrackingCode = value
+	}
 	if nodes := rc.mutation.SubscriptionIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -197,6 +225,23 @@ func (rc *RecordCreate) createSpec() (*Record, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.subscription_records = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := rc.mutation.PaymentIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: true,
+			Table:   record.PaymentTable,
+			Columns: []string{record.PaymentColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(payment.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.payment_records = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

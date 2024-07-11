@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"cyclic/ent/payment"
 	"cyclic/ent/plan"
 	"cyclic/ent/record"
 	"cyclic/ent/schema"
@@ -17,6 +18,16 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	paymentFields := schema.Payment{}.Fields()
+	_ = paymentFields
+	// paymentDescCreatedAt is the schema descriptor for created_at field.
+	paymentDescCreatedAt := paymentFields[3].Descriptor()
+	// payment.DefaultCreatedAt holds the default value on creation for the created_at field.
+	payment.DefaultCreatedAt = paymentDescCreatedAt.Default.(func() time.Time)
+	// paymentDescID is the schema descriptor for id field.
+	paymentDescID := paymentFields[0].Descriptor()
+	// payment.DefaultID holds the default value on creation for the id field.
+	payment.DefaultID = paymentDescID.Default.(func() uuid.UUID)
 	planFields := schema.Plan{}.Fields()
 	_ = planFields
 	// planDescExchangeable is the schema descriptor for exchangeable field.
