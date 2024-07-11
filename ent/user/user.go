@@ -23,6 +23,8 @@ const (
 	FieldName = "name"
 	// FieldRole holds the string denoting the role field in the database.
 	FieldRole = "role"
+	// FieldCurrency holds the string denoting the currency field in the database.
+	FieldCurrency = "currency"
 	// FieldActive holds the string denoting the active field in the database.
 	FieldActive = "active"
 	// EdgePlans holds the string denoting the plans edge name in mutations.
@@ -55,6 +57,7 @@ var Columns = []string{
 	FieldEmail,
 	FieldName,
 	FieldRole,
+	FieldCurrency,
 	FieldActive,
 }
 
@@ -75,6 +78,8 @@ var (
 	DefaultName string
 	// DefaultRole holds the default value on creation for the "role" field.
 	DefaultRole string
+	// DefaultCurrency holds the default value on creation for the "currency" field.
+	DefaultCurrency string
 	// DefaultActive holds the default value on creation for the "active" field.
 	DefaultActive bool
 	// DefaultID holds the default value on creation for the "id" field.
@@ -107,6 +112,11 @@ func ByName(opts ...sql.OrderTermOption) OrderOption {
 // ByRole orders the results by the role field.
 func ByRole(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRole, opts...).ToFunc()
+}
+
+// ByCurrency orders the results by the currency field.
+func ByCurrency(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCurrency, opts...).ToFunc()
 }
 
 // ByActive orders the results by the active field.

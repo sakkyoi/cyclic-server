@@ -84,6 +84,20 @@ func (uc *UserCreate) SetNillableRole(s *string) *UserCreate {
 	return uc
 }
 
+// SetCurrency sets the "currency" field.
+func (uc *UserCreate) SetCurrency(s string) *UserCreate {
+	uc.mutation.SetCurrency(s)
+	return uc
+}
+
+// SetNillableCurrency sets the "currency" field if the given value is not nil.
+func (uc *UserCreate) SetNillableCurrency(s *string) *UserCreate {
+	if s != nil {
+		uc.SetCurrency(*s)
+	}
+	return uc
+}
+
 // SetActive sets the "active" field.
 func (uc *UserCreate) SetActive(b bool) *UserCreate {
 	uc.mutation.SetActive(b)
@@ -185,6 +199,10 @@ func (uc *UserCreate) defaults() {
 		v := user.DefaultRole
 		uc.mutation.SetRole(v)
 	}
+	if _, ok := uc.mutation.Currency(); !ok {
+		v := user.DefaultCurrency
+		uc.mutation.SetCurrency(v)
+	}
 	if _, ok := uc.mutation.Active(); !ok {
 		v := user.DefaultActive
 		uc.mutation.SetActive(v)
@@ -207,6 +225,9 @@ func (uc *UserCreate) check() error {
 	}
 	if _, ok := uc.mutation.Role(); !ok {
 		return &ValidationError{Name: "role", err: errors.New(`ent: missing required field "User.role"`)}
+	}
+	if _, ok := uc.mutation.Currency(); !ok {
+		return &ValidationError{Name: "currency", err: errors.New(`ent: missing required field "User.currency"`)}
 	}
 	if _, ok := uc.mutation.Active(); !ok {
 		return &ValidationError{Name: "active", err: errors.New(`ent: missing required field "User.active"`)}
@@ -265,6 +286,10 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := uc.mutation.Role(); ok {
 		_spec.SetField(user.FieldRole, field.TypeString, value)
 		_node.Role = value
+	}
+	if value, ok := uc.mutation.Currency(); ok {
+		_spec.SetField(user.FieldCurrency, field.TypeString, value)
+		_node.Currency = value
 	}
 	if value, ok := uc.mutation.Active(); ok {
 		_spec.SetField(user.FieldActive, field.TypeBool, value)

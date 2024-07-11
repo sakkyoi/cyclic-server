@@ -19,6 +19,7 @@ type Input struct {
 	Username string `form:"username" binding:"required,alphanum,min=4,max=15"`
 	Password string `form:"password" binding:"required"`
 	Email    string `form:"email" binding:"required,email"`
+	Currency string `form:"currency" binding:"required"`
 }
 
 func (*Signup) Signup(c *gin.Context) {
@@ -45,7 +46,8 @@ func (*Signup) Signup(c *gin.Context) {
 	u := secretary.Minute.User.Create().
 		SetUsername(input.Username).
 		SetPassword(encoded).
-		SetEmail(input.Email)
+		SetEmail(input.Email).
+		SetCurrency(input.Currency)
 
 	// if verification is not required, activate the user
 	if !colonel.Writ.Signup.Verification {

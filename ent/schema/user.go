@@ -32,6 +32,8 @@ func (User) Fields() []ent.Field {
 			Default("unknown"),
 		field.String("role").
 			Default("user"),
+		field.String("currency").
+			Default("USD"),
 		field.Bool("active").
 			Default(false),
 	}

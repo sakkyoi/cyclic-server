@@ -2527,6 +2527,7 @@ type UserMutation struct {
 	email                *string
 	name                 *string
 	role                 *string
+	currency             *string
 	active               *bool
 	clearedFields        map[string]struct{}
 	plans                map[uuid.UUID]struct{}
@@ -2863,6 +2864,42 @@ func (m *UserMutation) ResetRole() {
 	m.role = nil
 }
 
+// SetCurrency sets the "currency" field.
+func (m *UserMutation) SetCurrency(s string) {
+	m.currency = &s
+}
+
+// Currency returns the value of the "currency" field in the mutation.
+func (m *UserMutation) Currency() (r string, exists bool) {
+	v := m.currency
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrency returns the old "currency" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldCurrency(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrency is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrency requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrency: %w", err)
+	}
+	return oldValue.Currency, nil
+}
+
+// ResetCurrency resets all changes to the "currency" field.
+func (m *UserMutation) ResetCurrency() {
+	m.currency = nil
+}
+
 // SetActive sets the "active" field.
 func (m *UserMutation) SetActive(b bool) {
 	m.active = &b
@@ -3041,7 +3078,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.username != nil {
 		fields = append(fields, user.FieldUsername)
 	}
@@ -3056,6 +3093,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.role != nil {
 		fields = append(fields, user.FieldRole)
+	}
+	if m.currency != nil {
+		fields = append(fields, user.FieldCurrency)
 	}
 	if m.active != nil {
 		fields = append(fields, user.FieldActive)
@@ -3078,6 +3118,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case user.FieldRole:
 		return m.Role()
+	case user.FieldCurrency:
+		return m.Currency()
 	case user.FieldActive:
 		return m.Active()
 	}
@@ -3099,6 +3141,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldName(ctx)
 	case user.FieldRole:
 		return m.OldRole(ctx)
+	case user.FieldCurrency:
+		return m.OldCurrency(ctx)
 	case user.FieldActive:
 		return m.OldActive(ctx)
 	}
@@ -3144,6 +3188,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRole(v)
+		return nil
+	case user.FieldCurrency:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrency(v)
 		return nil
 	case user.FieldActive:
 		v, ok := value.(bool)
@@ -3236,6 +3287,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldRole:
 		m.ResetRole()
+		return nil
+	case user.FieldCurrency:
+		m.ResetCurrency()
 		return nil
 	case user.FieldActive:
 		m.ResetActive()

@@ -106,6 +106,7 @@ var (
 		{Name: "email", Type: field.TypeString, Unique: true, Nullable: true},
 		{Name: "name", Type: field.TypeString, Default: "unknown"},
 		{Name: "role", Type: field.TypeString, Default: "user"},
+		{Name: "currency", Type: field.TypeString, Default: "USD"},
 		{Name: "active", Type: field.TypeBool, Default: false},
 	}
 	// UsersTable holds the schema information for the "users" table.

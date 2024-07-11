@@ -110,6 +110,20 @@ func (uu *UserUpdate) SetNillableRole(s *string) *UserUpdate {
 	return uu
 }
 
+// SetCurrency sets the "currency" field.
+func (uu *UserUpdate) SetCurrency(s string) *UserUpdate {
+	uu.mutation.SetCurrency(s)
+	return uu
+}
+
+// SetNillableCurrency sets the "currency" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableCurrency(s *string) *UserUpdate {
+	if s != nil {
+		uu.SetCurrency(*s)
+	}
+	return uu
+}
+
 // SetActive sets the "active" field.
 func (uu *UserUpdate) SetActive(b bool) *UserUpdate {
 	uu.mutation.SetActive(b)
@@ -273,6 +287,9 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := uu.mutation.Role(); ok {
 		_spec.SetField(user.FieldRole, field.TypeString, value)
+	}
+	if value, ok := uu.mutation.Currency(); ok {
+		_spec.SetField(user.FieldCurrency, field.TypeString, value)
 	}
 	if value, ok := uu.mutation.Active(); ok {
 		_spec.SetField(user.FieldActive, field.TypeBool, value)
@@ -463,6 +480,20 @@ func (uuo *UserUpdateOne) SetRole(s string) *UserUpdateOne {
 func (uuo *UserUpdateOne) SetNillableRole(s *string) *UserUpdateOne {
 	if s != nil {
 		uuo.SetRole(*s)
+	}
+	return uuo
+}
+
+// SetCurrency sets the "currency" field.
+func (uuo *UserUpdateOne) SetCurrency(s string) *UserUpdateOne {
+	uuo.mutation.SetCurrency(s)
+	return uuo
+}
+
+// SetNillableCurrency sets the "currency" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableCurrency(s *string) *UserUpdateOne {
+	if s != nil {
+		uuo.SetCurrency(*s)
 	}
 	return uuo
 }
@@ -660,6 +691,9 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if value, ok := uuo.mutation.Role(); ok {
 		_spec.SetField(user.FieldRole, field.TypeString, value)
+	}
+	if value, ok := uuo.mutation.Currency(); ok {
+		_spec.SetField(user.FieldCurrency, field.TypeString, value)
 	}
 	if value, ok := uuo.mutation.Active(); ok {
 		_spec.SetField(user.FieldActive, field.TypeBool, value)

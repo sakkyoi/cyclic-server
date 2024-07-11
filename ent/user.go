@@ -27,6 +27,8 @@ type User struct {
 	Name string `json:"name,omitempty"`
 	// Role holds the value of the "role" field.
 	Role string `json:"role,omitempty"`
+	// Currency holds the value of the "currency" field.
+	Currency string `json:"currency,omitempty"`
 	// Active holds the value of the "active" field.
 	Active bool `json:"active,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -73,7 +75,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case user.FieldActive:
 			values[i] = new(sql.NullBool)
-		case user.FieldUsername, user.FieldEmail, user.FieldName, user.FieldRole:
+		case user.FieldUsername, user.FieldEmail, user.FieldName, user.FieldRole, user.FieldCurrency:
 			values[i] = new(sql.NullString)
 		case user.FieldID:
 			values[i] = new(uuid.UUID)
@@ -127,6 +129,12 @@ func (u *User) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field role", values[i])
 			} else if value.Valid {
 				u.Role = value.String
+			}
+		case user.FieldCurrency:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field currency", values[i])
+			} else if value.Valid {
+				u.Currency = value.String
 			}
 		case user.FieldActive:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -193,6 +201,9 @@ func (u *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("role=")
 	builder.WriteString(u.Role)
+	builder.WriteString(", ")
+	builder.WriteString("currency=")
+	builder.WriteString(u.Currency)
 	builder.WriteString(", ")
 	builder.WriteString("active=")
 	builder.WriteString(fmt.Sprintf("%v", u.Active))

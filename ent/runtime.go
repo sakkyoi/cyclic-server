@@ -85,8 +85,12 @@ func init() {
 	userDescRole := userFields[5].Descriptor()
 	// user.DefaultRole holds the default value on creation for the role field.
 	user.DefaultRole = userDescRole.Default.(string)
+	// userDescCurrency is the schema descriptor for currency field.
+	userDescCurrency := userFields[6].Descriptor()
+	// user.DefaultCurrency holds the default value on creation for the currency field.
+	user.DefaultCurrency = userDescCurrency.Default.(string)
 	// userDescActive is the schema descriptor for active field.
-	userDescActive := userFields[6].Descriptor()
+	userDescActive := userFields[7].Descriptor()
 	// user.DefaultActive holds the default value on creation for the active field.
 	user.DefaultActive = userDescActive.Default.(bool)
 	// userDescID is the schema descriptor for id field.
