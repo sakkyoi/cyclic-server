@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"net/http"
 	"time"
+	"unsafe"
 )
 
 type AddInput struct {
@@ -82,14 +83,12 @@ func (*Record) Add(c *gin.Context) {
 	// calculate the range of the declare_for
 	end := s.Edges.Plan.StartFrom
 	for end.Before(declareFor) {
-		switch s.Edges.Plan.DurationType {
-		case "days":
-			end = end.AddDate(0, 0, int(s.Edges.Plan.Duration))
-		case "months":
-			end = end.AddDate(0, int(s.Edges.Plan.Duration), 0)
-		case "years":
-			end = end.AddDate(int(s.Edges.Plan.Duration), 0, 0)
-		}
+		// the func(b bool) *bool { return &b } is used to convert bool to *bool (get the address of the bool)
+		// int(*(*byte)(unsafe.Pointer(&b))) is used to convert bool to int (the &b is made by the func above)
+		end = end.AddDate(
+			int(s.Edges.Plan.Duration)*int(*(*byte)(unsafe.Pointer(func(b bool) *bool { return &b }(s.Edges.Plan.DurationType == "years")))),
+			int(s.Edges.Plan.Duration)*int(*(*byte)(unsafe.Pointer(func(b bool) *bool { return &b }(s.Edges.Plan.DurationType == "months")))),
+			int(s.Edges.Plan.Duration)*int(*(*byte)(unsafe.Pointer(func(b bool) *bool { return &b }(s.Edges.Plan.DurationType == "days")))))
 	}
 	// check if there is no overlapping declare_for
 	// the declare_for is the same as the end
